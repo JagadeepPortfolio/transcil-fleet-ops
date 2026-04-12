@@ -1,0 +1,199 @@
+import { createClient } from "@/lib/supabase/server"
+
+/**
+ * CANONICAL VS AUDIT TRAIL RULE
+ * ============================================================================
+ * deployments row holds canonical state; activity_log is the audit trail.
+ * Every event insert MUST update the corresponding deployment columns in the
+ * same transaction, otherwise the dashboard and the audit trail drift apart.
+ *
+ * Event type → deployment columns touched:
+ *   PAYMENT          none (computed via deployments_enriched view)
+ *   DEPOSIT          none (computed via view)
+ *   DEPOSIT_REFUND   deposit_refund_status → 'Refunded' / 'Carried Forward'
+ *   REPLACEMENT      vehicle_id → new vehicle
+ *   EXTENSION        weeks += extra_weeks (due_date auto via GENERATED col)
+ *   RETURN           status='RETURNED', return_date, return_reason
+ *   REMINDER_CALL    call_status, call_notes
+ *   LOCK             lock_status='Locked', lock_date
+ *   UNLOCK           lock_status='Unlocked'
+ *
+ * Writes happen through logActivityEvent() only. Do NOT `insert into
+ * activity_log` from a component or Server Action directly.
+ * ============================================================================
+ */
+
+export type ActivityEventInput =
+  | {
+      type: "PAYMENT"
+      eventDate: string
+      amountInr: number
+      weekNumber?: number
+      transactionId?: string
+      additionalTransactionId?: string
+      notes?: string
+    }
+  | {
+      type: "DEPOSIT"
+      eventDate: string
+      amountInr: number
+      transactionId?: string
+      notes?: string
+    }
+  | {
+      type: "DEPOSIT_REFUND"
+      eventDate: string
+      amountInr: number
+      transactionId?: string
+      refundStatus: "Refunded" | "Carried Forward"
+      notes?: string
+    }
+  | {
+      type: "REPLACEMENT"
+      eventDate: string
+      oldVehicleId: string
+      newVehicleId: string
+      oldVtd: string
+      newVtd: string
+      reason?: string
+      notes?: string
+    }
+  | {
+      type: "EXTENSION"
+      eventDate: string
+      extraWeeks: number
+      notes?: string
+    }
+  | {
+      type: "RETURN"
+      eventDate: string
+      reason?: string
+      notes?: string
+    }
+  | {
+      type: "REMINDER_CALL"
+      eventDate: string
+      callOutcome: string
+      notes?: string
+    }
+  | { type: "LOCK"; eventDate: string; notes?: string }
+  | { type: "UNLOCK"; eventDate: string; notes?: string }
+
+export async function logActivityEvent(
+  deploymentId: string,
+  event: ActivityEventInput
+) {
+  const supabase = createClient()
+
+  // 1) Insert activity_log row
+  const insertPayload: Record<string, unknown> = {
+    deployment_id: deploymentId,
+    event_type: event.type,
+    event_date: event.eventDate,
+    notes: "notes" in event ? event.notes ?? null : null,
+  }
+
+  switch (event.type) {
+    case "PAYMENT":
+      insertPayload.amount_inr = event.amountInr
+      insertPayload.week_number = event.weekNumber ?? null
+      insertPayload.transaction_id = event.transactionId ?? null
+      insertPayload.additional_transaction_id = event.additionalTransactionId ?? null
+      break
+    case "DEPOSIT":
+      insertPayload.amount_inr = event.amountInr
+      insertPayload.transaction_id = event.transactionId ?? null
+      break
+    case "DEPOSIT_REFUND":
+      insertPayload.amount_inr = event.amountInr
+      insertPayload.transaction_id = event.transactionId ?? null
+      break
+    case "REPLACEMENT":
+      insertPayload.old_vehicle_id = event.oldVehicleId
+      insertPayload.new_vehicle_id = event.newVehicleId
+      insertPayload.old_vtd = event.oldVtd
+      insertPayload.new_vtd = event.newVtd
+      insertPayload.reason = event.reason ?? null
+      break
+    case "EXTENSION":
+      insertPayload.extra_weeks = event.extraWeeks
+      break
+    case "RETURN":
+      insertPayload.reason = event.reason ?? null
+      break
+    case "REMINDER_CALL":
+      insertPayload.call_outcome = event.callOutcome
+      break
+    case "LOCK":
+    case "UNLOCK":
+      break
+  }
+
+  const { error: insertErr } = await supabase
+    .from("activity_log")
+    .insert(insertPayload)
+  if (insertErr) throw insertErr
+
+  // 2) Update corresponding deployment columns
+  const patch: Record<string, unknown> = {}
+  switch (event.type) {
+    case "DEPOSIT_REFUND":
+      patch.deposit_refund_status = event.refundStatus
+      break
+    case "REPLACEMENT":
+      patch.vehicle_id = event.newVehicleId
+      break
+    case "EXTENSION": {
+      // Read current weeks, add extraWeeks. Single-statement RPC would be
+      // better; for v1 we do it as read-modify-write and accept the race.
+      const { data: row } = await supabase
+        .from("deployments")
+        .select("weeks")
+        .eq("id", deploymentId)
+        .maybeSingle()
+      if (row) patch.weeks = ((row as { weeks: number }).weeks) + event.extraWeeks
+      break
+    }
+    case "RETURN":
+      patch.status = "RETURNED"
+      patch.return_date = event.eventDate
+      patch.return_reason = event.reason ?? null
+      break
+    case "REMINDER_CALL":
+      patch.call_status = event.callOutcome
+      break
+    case "LOCK":
+      patch.lock_status = "Locked"
+      patch.lock_date = event.eventDate
+      patch.status = "LOCKED"
+      break
+    case "UNLOCK":
+      patch.lock_status = "Unlocked"
+      break
+    case "PAYMENT":
+    case "DEPOSIT":
+      // computed via view, nothing to patch
+      break
+  }
+
+  if (Object.keys(patch).length > 0) {
+    const { error: updateErr } = await supabase
+      .from("deployments")
+      .update(patch)
+      .eq("id", deploymentId)
+    if (updateErr) throw updateErr
+  }
+}
+
+export async function listActivityForDeployment(deploymentId: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("deployment_id", deploymentId)
+    .is("deleted_at", null)
+    .order("event_date", { ascending: false })
+    .order("created_at", { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
