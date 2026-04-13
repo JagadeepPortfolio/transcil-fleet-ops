@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook: blocks commits containing likely secrets.
+#
+# Install: git config core.hooksPath .githooks
+# (Already set by the repo setup — see README.)
+#
+# Patterns checked (regex, case-insensitive on value side):
+#   - Supabase service-role keys (sb_secret_*, eyJhbGci... long JWTs)
+#   - Generic API keys / tokens / passwords assigned inline
+#   - AWS access keys
+#   - Private key file markers
+#   - .env files staged for commit
+#
+# False positive? Add the file to the allowlist below.
+
+set -euo pipefail
+
+ALLOWLIST="\.env\.example$|\.githooks/pre-commit$|CLAUDE\.md$|docs/|README\.md$"
+
+# 1) Block .env files (should be gitignored, this is belt-and-braces)
+ENV_FILES=$(git diff --cached --name-only | grep -E '\.env($|\.)' | grep -vE "$ALLOWLIST" || true)
+if [ -n "$ENV_FILES" ]; then
+  echo "🚫 BLOCKED: .env file(s) staged for commit:"
+  echo "$ENV_FILES"
+  echo ""
+  echo "These files contain secrets and must not be committed."
+  echo "If this is intentional, use --no-verify (not recommended)."
+  exit 1
+fi
+
+# 2) Scan staged file contents for secret patterns
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -vE "$ALLOWLIST" || true)
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+# Patterns that should never appear in committed code
+PATTERNS=(
+  'sb_secret_[A-Za-z0-9_-]+'
+  'sb_publishable_[A-Za-z0-9_-]+'
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.'
+  'AKIA[0-9A-Z]{16}'
+  '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'
+  'sk-[a-zA-Z0-9]{20,}'
+  'ghp_[a-zA-Z0-9]{36}'
+  'xoxb-[0-9]+-[a-zA-Z0-9]+'
+)
+
+FOUND=0
+for pattern in "${PATTERNS[@]}"; do
+  MATCHES=$(echo "$STAGED" | xargs git diff --cached -- | grep -nE "$pattern" 2>/dev/null || true)
+  if [ -n "$MATCHES" ]; then
+    if [ "$FOUND" -eq 0 ]; then
+      echo "🚫 BLOCKED: potential secret(s) detected in staged changes:"
+      echo ""
+    fi
+    echo "  Pattern: $pattern"
+    echo "$MATCHES" | head -5 | sed 's/^/    /'
+    echo ""
+    FOUND=1
+  fi
+done
+
+if [ "$FOUND" -eq 1 ]; then
+  echo "Remove the secret, use an environment variable, and try again."
+  echo "If this is a false positive, add the file to the ALLOWLIST in .githooks/pre-commit."
+  exit 1
+fi
+
+exit 0

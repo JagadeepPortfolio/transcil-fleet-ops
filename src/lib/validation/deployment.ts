@@ -1,8 +1,9 @@
 import { z } from "zod"
+import { dbUuid } from "./helpers"
 
 export const deploymentCreateSchema = z.object({
-  rider_id: z.string().uuid("Pick a rider"),
-  vehicle_id: z.string().uuid("Pick a vehicle"),
+  rider_id: dbUuid("Pick a rider"),
+  vehicle_id: dbUuid("Pick a vehicle"),
   hub_id: z.coerce.number().int().positive("Pick a hub"),
   deploy_date: z
     .string()

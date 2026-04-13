@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 export type RiderRow = {
   id: string
   legacy_rider_id: string | null
+  app_rider_id: string | null
   name: string
   phone: string
   address: string | null

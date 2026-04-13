@@ -1,0 +1,280 @@
+import { createClient } from "@/lib/supabase/server"
+import type { DeploymentEnrichedRow } from "./deployments"
+
+/**
+ * Report query helpers.
+ *
+ * These read from `deployments_enriched` and `activity_log` — the same
+ * views/tables the rest of the app uses. No new DB objects needed.
+ *
+ * All queries respect `deleted_at IS NULL` via the view or explicit filter.
+ */
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Monthly summary
+// ─────────────────────────────────────────────────────────────────────────
+
+export type MonthlySummary = {
+  totalDeployments: number
+  activeDeployments: number
+  newDeployments: number
+  returns: number
+  totalVehicles: number
+  deployedVehicles: number
+  utilizationPct: number
+  totalCollected: number
+  totalDue: number
+  collectionPct: number
+  depositsCollected: number
+  depositsRefunded: number
+  overdueCount: number
+  paymentCount: number
+}
+
+export async function getMonthlySummary(
+  year: number,
+  month: number
+): Promise<MonthlySummary> {
+  const supabase = createClient()
+  const monthStart = `${year}-${String(month).padStart(2, "0")}-01`
+  const nextMonth = month === 12 ? 1 : month + 1
+  const nextYear = month === 12 ? year + 1 : year
+  const monthEnd = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`
+
+  const [deploymentsRes, vehicleRes, activityRes] = await Promise.all([
+    // All deployments from the enriched view
+    supabase.from("deployments_enriched").select("*"),
+    // Total vehicles
+    supabase
+      .from("vehicles")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null),
+    // Activity events in this month
+    supabase
+      .from("activity_log")
+      .select("event_type, amount_inr, transaction_id")
+      .gte("event_date", monthStart)
+      .lt("event_date", monthEnd)
+      .is("deleted_at", null),
+  ])
+
+  if (deploymentsRes.error) throw deploymentsRes.error
+  if (vehicleRes.error) throw vehicleRes.error
+  if (activityRes.error) throw activityRes.error
+
+  const deployments = (deploymentsRes.data ?? []) as unknown as DeploymentEnrichedRow[]
+  const events = activityRes.data ?? []
+  const totalVehicles = vehicleRes.count ?? 0
+
+  // New deployments created in this month
+  const newDeployments = deployments.filter(
+    (d) => d.deploy_date >= monthStart && d.deploy_date < monthEnd
+  ).length
+
+  // Returns in this month
+  const returns = deployments.filter(
+    (d) =>
+      d.status === "RETURNED" &&
+      d.return_date &&
+      d.return_date >= monthStart &&
+      d.return_date < monthEnd
+  ).length
+
+  const activeDeployments = deployments.filter(
+    (d) => d.status === "ACTIVE"
+  ).length
+
+  const deployedVehicles = activeDeployments // one vehicle per active deployment
+  const utilizationPct =
+    totalVehicles > 0
+      ? Math.round((deployedVehicles / totalVehicles) * 100)
+      : 0
+
+  // Payment events this month (with txn ID = counts toward total)
+  const payments = events.filter(
+    (e) => e.event_type === "PAYMENT" && e.transaction_id
+  )
+  const totalCollected = payments.reduce(
+    (sum, e) => sum + (Number(e.amount_inr) || 0),
+    0
+  )
+
+  // Total due across all active deployments
+  const totalDue = deployments
+    .filter((d) => d.status === "ACTIVE")
+    .reduce((sum, d) => sum + (d.total_due ?? 0), 0)
+
+  const collectionPct =
+    totalDue > 0 ? Math.round((totalCollected / totalDue) * 100) : 0
+
+  // Deposits
+  const depositsCollected = events
+    .filter((e) => e.event_type === "DEPOSIT" && e.transaction_id)
+    .reduce((sum, e) => sum + (Number(e.amount_inr) || 0), 0)
+
+  const depositsRefunded = events
+    .filter((e) => e.event_type === "DEPOSIT_REFUND" && e.transaction_id)
+    .reduce((sum, e) => sum + (Number(e.amount_inr) || 0), 0)
+
+  const overdueCount = deployments.filter(
+    (d) => d.status === "ACTIVE" && d.pay_status === "OVERDUE"
+  ).length
+
+  return {
+    totalDeployments: deployments.length,
+    activeDeployments,
+    newDeployments,
+    returns,
+    totalVehicles,
+    deployedVehicles,
+    utilizationPct,
+    totalCollected,
+    totalDue,
+    collectionPct,
+    depositsCollected,
+    depositsRefunded,
+    overdueCount,
+    paymentCount: payments.length,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Outstanding balances — ageing buckets
+// ─────────────────────────────────────────────────────────────────────────
+
+export type AgeingBucket = "current" | "1_7" | "8_14" | "15_30" | "30_plus"
+
+export type OutstandingRow = DeploymentEnrichedRow & {
+  bucket: AgeingBucket
+}
+
+export async function getOutstandingBalances(): Promise<OutstandingRow[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("deployments_enriched")
+    .select("*")
+    .eq("status", "ACTIVE")
+    .order("days_left", { ascending: true })
+
+  if (error) throw error
+
+  return ((data ?? []) as unknown as DeploymentEnrichedRow[])
+    .filter((d) => (d.balance ?? 0) > 0)
+    .map((d) => {
+      const overdueDays =
+        d.days_left != null && d.days_left < 0 ? Math.abs(d.days_left) : 0
+      let bucket: AgeingBucket = "current"
+      if (overdueDays >= 30) bucket = "30_plus"
+      else if (overdueDays >= 15) bucket = "15_30"
+      else if (overdueDays >= 8) bucket = "8_14"
+      else if (overdueDays >= 1) bucket = "1_7"
+      return { ...d, bucket }
+    })
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Hub performance
+// ─────────────────────────────────────────────────────────────────────────
+
+export type HubPerformance = {
+  hubId: number
+  hubName: string
+  activeDeployments: number
+  totalVehicles: number
+  utilizationPct: number
+  totalCollected: number
+  totalDue: number
+  collectionPct: number
+  overdueCount: number
+  avgDaysLeft: number | null
+}
+
+export async function getHubPerformance(
+  year: number,
+  month: number
+): Promise<HubPerformance[]> {
+  const supabase = createClient()
+  const monthStart = `${year}-${String(month).padStart(2, "0")}-01`
+  const nextMonth = month === 12 ? 1 : month + 1
+  const nextYear = month === 12 ? year + 1 : year
+  const monthEnd = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`
+
+  const [deploymentsRes, hubsRes, activityRes, vehiclesRes] = await Promise.all([
+    supabase.from("deployments_enriched").select("*"),
+    supabase.from("hubs").select("id, name").order("id"),
+    supabase
+      .from("activity_log")
+      .select("deployment_id, event_type, amount_inr, transaction_id")
+      .gte("event_date", monthStart)
+      .lt("event_date", monthEnd)
+      .is("deleted_at", null),
+    supabase
+      .from("vehicles")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null),
+  ])
+
+  if (deploymentsRes.error) throw deploymentsRes.error
+  if (hubsRes.error) throw hubsRes.error
+  if (activityRes.error) throw activityRes.error
+
+  const deployments = (deploymentsRes.data ?? []) as unknown as DeploymentEnrichedRow[]
+  const hubs = (hubsRes.data ?? []) as { id: number; name: string }[]
+  const events = activityRes.data ?? []
+  const totalVehicles = vehiclesRes.count ?? 0
+
+  // Build a deployment_id → hub_id lookup
+  const depHubMap = new Map<string, number>()
+  for (const d of deployments) depHubMap.set(d.id, d.hub_id)
+
+  // Per-hub payments this month
+  const hubPayments = new Map<number, number>()
+  for (const e of events) {
+    if (e.event_type === "PAYMENT" && e.transaction_id) {
+      const hubId = depHubMap.get(e.deployment_id as string)
+      if (hubId != null) {
+        hubPayments.set(hubId, (hubPayments.get(hubId) ?? 0) + (Number(e.amount_inr) || 0))
+      }
+    }
+  }
+
+  // Distribute vehicles evenly across hubs for utilization (best approximation
+  // without a vehicles.hub_id column — vehicles are hub-agnostic, deployments
+  // have the hub). Use deployed-per-hub / total-vehicles as a proxy.
+  const vehiclesPerHub = hubs.length > 0 ? Math.ceil(totalVehicles / hubs.length) : 0
+
+  return hubs.map((hub) => {
+    const hubDeployments = deployments.filter((d) => d.hub_id === hub.id)
+    const active = hubDeployments.filter((d) => d.status === "ACTIVE")
+    const overdue = active.filter((d) => d.pay_status === "OVERDUE")
+    const totalDue = active.reduce((s, d) => s + (d.total_due ?? 0), 0)
+    const collected = hubPayments.get(hub.id) ?? 0
+
+    const daysLeftValues = active
+      .map((d) => d.days_left)
+      .filter((v): v is number => v != null)
+    const avgDaysLeft =
+      daysLeftValues.length > 0
+        ? Math.round(
+            daysLeftValues.reduce((a, b) => a + b, 0) / daysLeftValues.length
+          )
+        : null
+
+    return {
+      hubId: hub.id,
+      hubName: hub.name,
+      activeDeployments: active.length,
+      totalVehicles: vehiclesPerHub,
+      utilizationPct:
+        vehiclesPerHub > 0
+          ? Math.round((active.length / vehiclesPerHub) * 100)
+          : 0,
+      totalCollected: collected,
+      totalDue,
+      collectionPct:
+        totalDue > 0 ? Math.round((collected / totalDue) * 100) : 0,
+      overdueCount: overdue.length,
+      avgDaysLeft,
+    }
+  })
+}

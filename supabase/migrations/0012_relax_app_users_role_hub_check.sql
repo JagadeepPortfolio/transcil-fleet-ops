@@ -1,0 +1,22 @@
+-- ============================================================================
+-- Relax the role_hub_check constraint on app_users.
+--
+-- Original intent (migration 0006): field staff and hub managers must belong
+-- to a hub. That's still true operationally — but it fights the
+-- handle_new_user() trigger, which inserts a baseline row at signup time with
+-- role=FIELD_STAFF (default) and hub_id=NULL (unassigned). That insert
+-- violates the check, the trigger raises, and Supabase auth surfaces it as
+-- "Database error creating new user."
+--
+-- Fix: drop the DB-level check. Hub assignment is an admin step that happens
+-- AFTER signup via /admin (Module 9, later session). Until then, the app
+-- layer is responsible for not letting an un-hubbed FIELD_STAFF do anything
+-- hub-scoped — which RLS already enforces, because current_user_hub_id()
+-- returns NULL and every hub-scoped policy compares hub_id = NULL and filters
+-- them out.
+--
+-- In short: RLS already makes un-hubbed staff harmless. The CHECK was
+-- belt-and-braces that turned out to be a footgun.
+-- ============================================================================
+
+ALTER TABLE public.app_users DROP CONSTRAINT IF EXISTS role_hub_check;

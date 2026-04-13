@@ -1,49 +1,48 @@
 -- ============================================================================
--- CMD bootstrap.
+-- CMD bootstrap helper.
 --
--- Creates the first CMD user with a hardcoded UUID so migrations can run
--- idempotently. Password is a well-known dev placeholder — CHANGE IT
--- IMMEDIATELY after first login via Supabase dashboard, or the README will
--- haunt you.
+-- Direct inserts into auth.users fight Supabase's auth internals (no email
+-- confirmation hooks, broken login flow, pgcrypto schema-search-path issues).
+-- Instead we install a small promotion function.
 --
--- In production (Supabase cloud) you may prefer to create the CMD user via
--- the Auth dashboard, then run only the app_users upsert. That path works
--- because the on_auth_user_created trigger will have already inserted a row
--- with role='FIELD_STAFF'; the upsert below flips it to 'CMD'.
+-- Bootstrap flow:
+--   1. Create the CMD account via Supabase dashboard:
+--        Auth → Users → Add user → cmd@transcil.local + password
+--      The handle_new_user trigger auto-creates an app_users row with
+--      role='FIELD_STAFF'.
+--   2. Run: SELECT public.promote_to_cmd('cmd@transcil.local');
+--      This flips role to CMD and clears hub_id.
+--
+-- Function is idempotent and safe to re-run. Only callable server-side
+-- (SECURITY DEFINER with an explicit search_path).
 -- ============================================================================
 
-DO $$
+CREATE OR REPLACE FUNCTION public.promote_to_cmd(target_email text)
+  RETURNS void
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public, auth
+AS $$
 DECLARE
-  cmd_id uuid := '00000000-0000-0000-0000-00000000c0d0';
+  target_id uuid;
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = cmd_id) THEN
-    INSERT INTO auth.users (
-      instance_id, id, aud, role,
-      email, encrypted_password,
-      email_confirmed_at,
-      raw_app_meta_data, raw_user_meta_data,
-      created_at, updated_at,
-      confirmation_token, email_change, email_change_token_new, recovery_token
-    )
-    VALUES (
-      '00000000-0000-0000-0000-000000000000',
-      cmd_id,
-      'authenticated', 'authenticated',
-      'cmd@transcil.local',
-      crypt('ChangeMe!2026', gen_salt('bf')),
-      now(),
-      '{"provider":"email","providers":["email"]}'::jsonb,
-      '{"full_name":"Transcil CMD"}'::jsonb,
-      now(), now(),
-      '', '', '', ''
-    );
+  SELECT id INTO target_id FROM auth.users WHERE email = target_email;
+  IF target_id IS NULL THEN
+    RAISE EXCEPTION 'No auth user found for email %', target_email;
   END IF;
 
-  -- Promote to CMD (handle_new_user trigger set them to FIELD_STAFF)
-  INSERT INTO app_users (id, full_name, role, hub_id)
-  VALUES (cmd_id, 'Transcil CMD', 'CMD', NULL)
+  -- The handle_new_user trigger inserts app_users on signup; if for some
+  -- reason it didn't fire (e.g. user created before the trigger existed),
+  -- upsert here so the function is self-healing.
+  INSERT INTO public.app_users (id, full_name, role, hub_id)
+  VALUES (target_id, 'Transcil CMD', 'CMD', NULL)
   ON CONFLICT (id) DO UPDATE SET
     role = 'CMD',
-    full_name = 'Transcil CMD',
     hub_id = NULL;
-END $$;
+END;
+$$;
+
+-- Only the service role (and superuser) should be able to call this.
+-- Revoke the default PUBLIC execute grant.
+REVOKE ALL ON FUNCTION public.promote_to_cmd(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.promote_to_cmd(text) TO service_role;

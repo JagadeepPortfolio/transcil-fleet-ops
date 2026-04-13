@@ -1,0 +1,174 @@
+# Changelog
+
+Session-by-session log of what shipped. Update this at the end of every
+session — future agents and developers depend on it for context.
+
+---
+
+## Session 11 — Foundation scaffold (2026-04-12)
+
+**Scope:** Scaffold + schema + auth + 3 modules.
+
+### Shipped
+
+- **Repo scaffold**: `create-next-app` + shadcn/ui init + all deps
+- **Supabase schema**: 12 migrations (`0001..0012`)
+  - Extensions: pgcrypto, citext
+  - Enums: rider_source, deployment_status, pay_status, action_priority,
+    call_status, lock_status, deposit_refund_status,
+    activity_event_type, app_role
+  - Reference tables: locations (20 Telangana cities), hubs (6),
+    vehicle_types (5)
+  - Core tables: riders, vehicles, deployments, activity_log, app_users
+  - Generated column: `deployments.due_date` (deploy_date + weeks*7)
+  - Partial unique indexes: one ACTIVE deployment per vehicle, one per
+    rider
+  - Views: `deployment_totals`, `deployments_enriched`
+  - Helper functions: `current_user_role()`, `current_user_hub_id()`,
+    `handle_new_user()` trigger, `promote_to_cmd()`
+  - RLS policies on all tables
+  - Storage buckets: rider-photos, rider-id-proofs, payment-receipts,
+    vehicle-photos
+  - Seed CMD user (migration 0011)
+  - Dropped `role_hub_check` (migration 0012) — fought the
+    `handle_new_user` trigger, RLS is sufficient
+- **Auth**: Supabase Auth (email/password), middleware session refresh,
+  layout double-check, Server Action sign-out
+- **Module 1 — Rider Profiles**: list / new / detail pages, photo
+  upload, unique phone constraint
+- **Module 2 — Deployments**: list / new / detail pages, activity log
+  read-only timeline, concurrency guard on create
+- **Module 3 — Vehicles admin**: CMD-only CRUD, derived availability
+- **Dashboard**: 3 KPI cards, 3 alert cards, "most urgent" top-5 list
+- **Shell**: sidebar, header with role badge + sign-out, login page with
+  form
+
+### Bug fixes
+
+- `role_hub_check` constraint dropped — prevented new auth users
+- Email confirmation applied manually for CMD user
+- `env.ts` zod schema updated to handle empty-string Sentry DSN
+  placeholders via `transform().pipe()` pattern
+
+---
+
+## Sessions 12/13/14 — UI/UX polish (2026-04-12)
+
+**Scope:** Design system, Cmd+K palette, dense tables, mobile shell.
+
+### Shipped
+
+- **Design system tokens**: success/warning/info semantic colors in oklch
+- **Badge system**: CVA variants + domain wrappers (ActionBadge,
+  PayStatusBadge, DeploymentStatusBadge, LockStatusBadge) — single
+  source of truth for status colors
+- **PageHeader**: breadcrumbs + title + description + action slot, used
+  on every page
+- **EmptyState**: dashed-border placeholder with icon + CTA
+- **DataTable** (`src/components/ui/data-table.tsx`): TanStack Table
+  wrapper with global filter, sort arrows, sticky headers, zebra rows
+- **Per-entity tables**: `DeploymentsTable`, `RidersTable`,
+  `VehiclesTable` — column defs with badge cells and custom sort
+- **Cmd+K command palette**: global keybinding, base-ui Dialog, lazy
+  fetch from `/api/search`, local filter, keyboard nav
+- **Mobile shell**: bottom tab bar (hidden md+), 4 tabs + Search
+- **Login page polish**: Transcil brand hero, centered card layout
+- **Header polish**: role badge, search trigger, backdrop blur
+- **Sidebar polish**: active state, icon column, brand mark
+- **Dashboard polish**: color-coded alert tints, KPI hover affordance
+
+---
+
+## Session 12 — Collection loop (2026-04-12)
+
+**Scope:** PAYMENT, DEPOSIT, DEPOSIT_REFUND, REMINDER_CALL write UIs.
+
+### Shipped
+
+- **Validation schemas**: `src/lib/validation/activity.ts` — paymentSchema,
+  depositSchema, depositRefundSchema, reminderCallSchema. All mirror the
+  Excel template field requirements including the "txn ID is optional but
+  gates Total Paid" audit safeguard.
+- **Server Actions**: `src/app/(app)/deployments/[id]/actions.ts` — 4
+  actions (recordPaymentAction, recordDepositAction, refundDepositAction,
+  logReminderCallAction). Each parses with zod → delegates to
+  `logActivityEvent()` → `revalidatePath` on detail + list + dashboard.
+- **Event dialogs**: `src/app/(app)/deployments/[id]/event-dialogs.tsx`
+  — 4 dialog forms (Payment / Deposit / Refund / Reminder Call) using
+  base-ui Dialog. Opens from a "Quick actions" card on the deployment
+  detail page (only shown for ACTIVE deployments). `useFormState` +
+  auto-close on success.
+- **Detail page integration**: Quick-actions card added between info grid
+  and activity log timeline. "Module 4 ships" placeholder removed.
+- **Branding**: Real Transcil logo + pin icon extracted from asset sheet,
+  optimized (logo 146 KB, icon 15 KB, favicon 11 KB), wired into login
+  page hero, sidebar brand mark, and browser favicon.
+- **Seed data**: `scripts/seed-dev.mjs` — applies 5 riders, 3 vehicles,
+  2 deployments via service-role key (idempotent). Needed because
+  `supabase db push` does not run `seed.sql`.
+- **DB smoke test**: `scripts/smoke-db.mjs` — 6 automated checks:
+  enriched view, row counts, CMD user, partial unique index enforcement,
+  RLS anon block, reference tables.
+- **Documentation**: `CLAUDE.md`, `docs/RIDER_FLOWS.md`,
+  `docs/CHANGELOG.md`, `docs/SMOKE_TESTS.md`. README updated.
+
+### Not shipped (deferred to next sessions)
+
+- S13: EXTENSION, RETURN, REPLACEMENT write UIs
+- S14: LOCK, UNLOCK write UIs
+- CSV Import (blocked on Discovery)
+- Full admin/settings UI
+
+---
+
+## Session 15 — Bug fixes, UX improvements, schema addition (2026-04-12)
+
+**Scope:** Fix deployment creation bug, deployment detail UX, riders schema.
+
+### Bug fixes
+
+- **Zod v4 UUID validation breaking form submissions**: `z.string().uuid()`
+  in Zod v4 enforces strict RFC 4122 version/variant bits, rejecting
+  synthetic seed UUIDs (e.g. `20000000-0000-0000-0000-000000000005`).
+  Replaced with a relaxed `dbUuid()` regex helper in
+  `src/lib/validation/helpers.ts`. Applied to `deployment.ts` and
+  `activity.ts`. Added as **invariant #9** in CLAUDE.md.
+- **LOCKED deployments showing blank in list**: The `deployments_enriched`
+  view returns `action = NULL` for non-ACTIVE deployments. Added a
+  **Status** column (`DeploymentStatusBadge`) to the deployments list
+  table so LOCKED/RETURNED/CANCELLED are always visible.
+
+### UX improvements
+
+- **Quick actions sidebar layout**: Moved quick actions from inline card
+  to a sticky left sidebar on the deployment detail page. Buttons are
+  vertical, ghost variant, left-aligned. Collapses above content on
+  mobile. Only renders for ACTIVE/LOCKED deployments.
+- **Activity log Weeks column**: Added a Weeks column to the activity
+  log table showing `+N` for EXTENSION events (extra_weeks) and week
+  number for PAYMENT events.
+- **Consistent button styling**: "Record payment" quick action was
+  `variant="default"` (dark) while all others were `variant="outline"`.
+  Normalized to ghost variant for the sidebar layout.
+- **Sidebar nav reorder**: Moved Reports after Vehicles in the sidebar.
+
+### Schema changes
+
+- **Migration 0013**: Added `app_rider_id text` column to `riders` table
+  for mobile app rider IDs. Sparse index on non-null values.
+- **Rider form**: "Rider ID" field added next to Source (optional, with
+  hint). Shown on rider detail page header when present.
+- **New deployment form**: Rider dropdown now shows app_rider_id in
+  parentheses when available.
+
+---
+
+## What's next
+
+| Priority | Work | Blocked on |
+|---|---|---|
+| 1 | CSV Import from legacy | Discovery (8 questions unanswered) |
+| 2 | Reports page (content TBD) | nothing |
+| 3 | WhatsApp / MSG91 OTP | Phase 2, provider accounts |
+| 4 | Vercel production deploy | env vars in Vercel dashboard |
+| 5 | Rider edit page (update existing rider details) | nothing |

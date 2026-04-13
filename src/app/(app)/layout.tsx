@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Sidebar } from "@/components/shell/sidebar"
 import { Header } from "@/components/shell/header"
+import { CommandPalette } from "@/components/shell/command-palette"
+import { MobileNav } from "@/components/shell/mobile-nav"
 
 /**
  * Auth-gated shell for all /(app) routes.
@@ -41,8 +43,12 @@ export default async function AppLayout({
       <Sidebar role={role} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header userEmail={user.email ?? null} role={role} />
-        <main className="flex-1 overflow-x-auto p-6">{children}</main>
+        <main className="flex-1 overflow-x-auto p-4 pb-20 md:p-6 md:pb-6">
+          {children}
+        </main>
       </div>
+      <CommandPalette />
+      <MobileNav role={role} />
     </div>
   )
 }

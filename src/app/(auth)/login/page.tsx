@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Field, FormError } from "@/components/ui/form-fields"
+
 export const metadata = {
   title: "Sign in · Transcil Fleet Ops",
 }
@@ -32,65 +36,42 @@ export default function LoginPage({
   const next = searchParams.next ?? "/dashboard"
 
   return (
-    <div className="rounded-lg border bg-background p-6 shadow-sm">
+    <Card className="p-6">
       <div className="mb-6 space-y-1">
-        <h1 className="text-xl font-semibold">Transcil Fleet Ops</h1>
-        <p className="text-sm text-muted-foreground">
-          Sign in to your account.
+        <h1 className="text-lg font-semibold">Sign in</h1>
+        <p className="text-xs text-muted-foreground">
+          Use your email and password to access fleet operations.
         </p>
       </div>
 
-      {error ? (
-        <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
-      ) : null}
+      <div className="mb-4">
+        <FormError message={error} />
+      </div>
 
       <form action={signIn} className="space-y-4">
         <input type="hidden" name="next" value={next} />
-        <div className="space-y-1">
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-foreground"
-          >
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        </div>
-        <div className="space-y-1">
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-foreground"
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
+        <Field
+          label="Email"
+          name="email"
+          type="email"
+          required
+          inputProps={{ autoComplete: "email", placeholder: "you@example.com" }}
+        />
+        <Field
+          label="Password"
+          name="password"
+          type="password"
+          required
+          inputProps={{ autoComplete: "current-password" }}
+        />
+        <Button type="submit" size="lg" className="w-full">
           Sign in
-        </button>
+        </Button>
       </form>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
         Need access? Contact your CMD.
       </p>
-    </div>
+    </Card>
   )
 }

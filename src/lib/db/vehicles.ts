@@ -5,6 +5,7 @@ export type VehicleRow = {
   vtd_no: string
   vehicle_id: string | null
   vehicle_type_id: number
+  hub_id: number | null
   colour: string | null
   created_at: string
   updated_at: string

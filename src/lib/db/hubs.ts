@@ -12,6 +12,7 @@ export async function listHubs() {
   const { data, error } = await supabase
     .from("hubs")
     .select("*")
+    .is("deleted_at", null)
     .order("id", { ascending: true })
   if (error) throw error
   return (data ?? []) as unknown as HubRow[]

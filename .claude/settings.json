@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.production)",
+      "Read(.env.staging)",
+      "Read(.env.*.local)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Edit(.env)",
+      "Edit(.env.local)",
+      "Edit(.env.production)",
+      "Edit(.env.staging)",
+      "Edit(.env.*.local)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Read(**/*credentials*)",
+      "Read(**/*secret*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*.p12)",
+      "Read(**/*.pfx)",
+      "Read(~/.aws/**)",
+      "Read(~/.ssh/**)",
+      "Read(~/.config/gcloud/**)",
+      "Bash(cat .env*)",
+      "Bash(cat */.env*)",
+      "Bash(head .env*)",
+      "Bash(tail .env*)",
+      "Bash(less .env*)",
+      "Bash(more .env*)",
+      "Bash(echo $SUPABASE_SERVICE_ROLE_KEY*)",
+      "Bash(printenv SUPABASE*)",
+      "Bash(printenv SENTRY*)"
+    ]
+  }
+}

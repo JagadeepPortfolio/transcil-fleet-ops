@@ -28,6 +28,7 @@ export type ActivityEventInput =
       type: "PAYMENT"
       eventDate: string
       amountInr: number
+      paymentMode: string
       weekNumber?: number
       transactionId?: string
       additionalTransactionId?: string
@@ -37,6 +38,7 @@ export type ActivityEventInput =
       type: "DEPOSIT"
       eventDate: string
       amountInr: number
+      paymentMode: string
       transactionId?: string
       notes?: string
     }
@@ -44,6 +46,7 @@ export type ActivityEventInput =
       type: "DEPOSIT_REFUND"
       eventDate: string
       amountInr: number
+      paymentMode: string
       transactionId?: string
       refundStatus: "Refunded" | "Carried Forward"
       notes?: string
@@ -96,16 +99,19 @@ export async function logActivityEvent(
   switch (event.type) {
     case "PAYMENT":
       insertPayload.amount_inr = event.amountInr
+      insertPayload.payment_mode = event.paymentMode
       insertPayload.week_number = event.weekNumber ?? null
       insertPayload.transaction_id = event.transactionId ?? null
       insertPayload.additional_transaction_id = event.additionalTransactionId ?? null
       break
     case "DEPOSIT":
       insertPayload.amount_inr = event.amountInr
+      insertPayload.payment_mode = event.paymentMode
       insertPayload.transaction_id = event.transactionId ?? null
       break
     case "DEPOSIT_REFUND":
       insertPayload.amount_inr = event.amountInr
+      insertPayload.payment_mode = event.paymentMode
       insertPayload.transaction_id = event.transactionId ?? null
       break
     case "REPLACEMENT":

@@ -8,22 +8,25 @@ replace the legacy mfg/registration app — that one stays.
 
 ---
 
-## Session 11 scope
-
-This is the **foundation cut**: scaffold, schema, auth, three modules.
+## Current status (Session 12 — 2026-04-12)
 
 | Module | Status |
 |---|---|
-| 1. Rider Profiles | shipped |
-| 2. Deployments | shipped (list + create + detail with activity log timeline) |
-| 3. Admin -> Vehicles (CMD only) | shipped |
-| 4. Payments & Activity Log write UI | deferred |
-| 5. Action Board mobile | deferred |
-| 6. Returns & Replacements | deferred |
-| 7. Overdue & Lock Queue | deferred |
-| 8. Dashboard KPI cards | empty shell only |
-| 9. Admin & Settings (full) | deferred |
-| CSV Import | blocked on Discovery |
+| 1. Rider Profiles | ✅ shipped |
+| 2. Deployments | ✅ shipped (list + create + detail) |
+| 3. Admin → Vehicles (CMD only) | ✅ shipped |
+| 4. PAYMENT / DEPOSIT / DEPOSIT_REFUND / REMINDER_CALL | ✅ shipped (S12 dialogs on detail page) |
+| 5. EXTENSION / RETURN / REPLACEMENT | planned S13 |
+| 6. LOCK / UNLOCK | planned S14 |
+| 7. Dashboard KPI cards | ✅ shipped |
+| 8. Command palette (Cmd+K) | ✅ shipped |
+| 9. Mobile shell (bottom nav) | ✅ shipped |
+| 10. Admin & Settings (full) | deferred |
+| CSV Import from legacy | blocked on Discovery |
+
+> For agent/AI context, see `CLAUDE.md`.
+> For rider-flow status, see `docs/RIDER_FLOWS.md`.
+> For the full session log, see `docs/CHANGELOG.md`.
 
 ---
 
@@ -55,7 +58,7 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-This applies `supabase/migrations/0001..0011` in order.
+This applies `supabase/migrations/0001..0012` in order.
 
 ### Dev server
 
@@ -89,6 +92,45 @@ dashboard.
 | `pnpm db:diff` | Diff local schema against remote — should be empty |
 | `pnpm db:new <name>` | Create a new timestamped migration |
 | `pnpm db:types` | Regenerate `src/lib/db/types.ts` from live schema |
+| `node scripts/seed-dev.mjs` | Seed dev data (5 riders, 3 vehicles, 2 deployments) |
+| `node scripts/smoke-db.mjs` | DB integrity smoke test (6 automated checks) |
+
+---
+
+## Security setup
+
+### Pre-commit hook (auto-installed)
+
+The repo uses a git pre-commit hook that scans for leaked secrets
+(Supabase keys, JWTs, AWS keys, private key headers, GitHub/Slack
+tokens). If detected, the commit is blocked.
+
+```bash
+# The hook path is set in git config — verify with:
+git config core.hooksPath   # should print: .githooks
+```
+
+If it's not set (e.g., after a fresh clone), run:
+```bash
+git config core.hooksPath .githooks
+```
+
+### Claude Code fencing
+
+`.claude/settings.json` denies Read/Edit of `.env*` files and common
+credential paths. This prevents AI agents from reading secrets during
+development sessions. See `CLAUDE.md` → "Security — secrets fencing"
+for full details.
+
+### What to never commit
+
+- `.env.local` or any `.env.*` file (gitignored)
+- Supabase service-role key (bypasses RLS — app-breaking if exposed)
+- Private keys (`*.pem`, `*.key`)
+- Credential JSON files
+
+Use `.env.example` as the reference for which env vars exist. It
+contains placeholder values only.
 
 ---
 
@@ -171,25 +213,36 @@ reserved for webhook callers and health checks — **not** for CRUD.
 ```
 src/
   app/
-    (auth)/login        # public login
-    (app)/              # auth-gated shell (middleware + layout double-check)
-      dashboard/        # empty shell, KPIs come with Module 8
-      riders/           # Module 1
-      deployments/      # Module 2
-      admin/vehicles/   # Module 3 (CMD only, gated by admin/layout.tsx)
-    api/health          # DB health check
+    (auth)/login          # public login + brand hero
+    (app)/                # auth-gated shell (middleware + layout double-check)
+      dashboard/          # KPI cards + alert cards + "most urgent" list
+      riders/             # Module 1 (list / new / [id] detail)
+      deployments/        # Module 2 (list / new / [id] detail + S12 event dialogs)
+      admin/vehicles/     # Module 3 (CMD only)
+    api/
+      health/             # DB liveness check
+      search/             # feeds Cmd+K palette
   lib/
     supabase/{server,client,middleware}.ts
-    db/                 # typed query helpers; all filter deleted_at
-    validation/         # zod schemas shared by forms + Server Actions
-    auth/otp.ts         # MSG91 stub interface
-    env.ts              # zod-validated env at boot
+    db/                   # typed query helpers; all filter deleted_at
+    validation/           # zod schemas: rider, deployment, activity
+    auth/otp.ts           # MSG91 stub interface
+    env.ts                # zod-validated env at boot
   components/
-    shell/              # sidebar, header
-    ui/                 # shadcn primitives
+    shell/                # sidebar, header, command palette, mobile nav
+    ui/                   # badge, card, data-table, form-fields, etc.
+    tables/               # per-entity TanStack Table column defs
 supabase/
-  migrations/           # 0001-0011 source of truth
-  seed.sql              # dev fixtures
+  migrations/             # 0001-0012 source of truth
+  seed.sql                # dev fixtures
+scripts/
+  seed-dev.mjs            # idempotent dev seeder (runs against remote)
+  smoke-db.mjs            # 6 automated DB integrity checks
+docs/
+  CHANGELOG.md            # session log
+  RIDER_FLOWS.md          # 9 rider flows — what's shipped vs planned
+  SMOKE_TESTS.md          # smoke test checklist
+CLAUDE.md                 # agent/AI orientation — read this for continuity
 ```
 
 ---

@@ -1,10 +1,23 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import { ArrowLeft } from "lucide-react"
+
 import { createClient } from "@/lib/supabase/server"
 import { listLocations } from "@/lib/db/hubs"
 import { findRiderByPhone } from "@/lib/db/riders"
 import { riderCreateSchema, riderSources } from "@/lib/validation/rider"
+
+import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/ui/page-header"
+import { Card } from "@/components/ui/card"
+import {
+  Field,
+  SelectField,
+  TextareaField,
+  FileField,
+  FormError,
+} from "@/components/ui/form-fields"
 
 export const metadata = {
   title: "New rider · Transcil Fleet Ops",
@@ -17,6 +30,7 @@ async function createRider(formData: FormData) {
     name: formData.get("name"),
     phone: formData.get("phone"),
     source: formData.get("source"),
+    app_rider_id: formData.get("app_rider_id") ?? "",
     location_id: formData.get("location_id"),
     address: formData.get("address") ?? "",
     notes: formData.get("notes") ?? "",
@@ -28,8 +42,6 @@ async function createRider(formData: FormData) {
   }
   const input = parsed.data
 
-  // Surface duplicate phones with a friendly link instead of a raw
-  // constraint violation.
   const existing = await findRiderByPhone(input.phone)
   if (existing) {
     redirect(
@@ -43,9 +55,6 @@ async function createRider(formData: FormData) {
   const { data: user } = await supabase.auth.getUser()
   const userId = user.user?.id
 
-  // File uploads (photo + id_proof). Kept small and simple for v1:
-  // server-side only, no compression on the wire yet. Client-side
-  // compression lands when Module 4 introduces photo capture.
   const photoFile = formData.get("photo") as File | null
   const idProofFile = formData.get("id_proof") as File | null
 
@@ -60,9 +69,7 @@ async function createRider(formData: FormData) {
     const { error } = await supabase.storage
       .from("rider-photos")
       .upload(path, photoFile, { upsert: true, contentType: photoFile.type })
-    if (!error) {
-      photoUrl = path
-    }
+    if (!error) photoUrl = path
   }
 
   if (idProofFile && idProofFile.size > 0) {
@@ -74,9 +81,7 @@ async function createRider(formData: FormData) {
         upsert: true,
         contentType: idProofFile.type,
       })
-    if (!error) {
-      idProofUrl = path
-    }
+    if (!error) idProofUrl = path
   }
 
   const { error: insertErr } = await supabase.from("riders").insert({
@@ -84,6 +89,7 @@ async function createRider(formData: FormData) {
     name: input.name,
     phone: input.phone,
     source: input.source,
+    app_rider_id: input.app_rider_id || null,
     location_id: input.location_id,
     address: input.address || null,
     notes: input.notes || null,
@@ -111,59 +117,64 @@ export default async function NewRiderPage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">New rider</h1>
-          <p className="text-sm text-muted-foreground">
-            Capture rider details. Photo and ID proof are optional for now.
-          </p>
-        </div>
-        <Link
-          href="/riders"
-          className="text-sm text-muted-foreground hover:underline"
-        >
-          ← Back to list
-        </Link>
-      </div>
+      <PageHeader
+        breadcrumbs={[
+          { label: "Riders", href: "/riders" },
+          { label: "New" },
+        ]}
+        title="New rider"
+        description="Capture rider details. Photo and ID proof are optional for now."
+        action={
+          <Button variant="ghost" render={<Link href="/riders" />}>
+            <ArrowLeft /> Back
+          </Button>
+        }
+      />
 
-      {error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error}
-          {searchParams.existing ? (
-            <>
-              {" · "}
-              <Link
-                href={`/riders/${searchParams.existing}`}
-                className="underline"
-              >
-                Open existing profile
-              </Link>
-            </>
-          ) : null}
+      <FormError message={error} />
+      {error && searchParams.existing ? (
+        <div className="-mt-3 text-xs">
+          <Link
+            href={`/riders/${searchParams.existing}`}
+            className="text-destructive underline"
+          >
+            Open existing profile →
+          </Link>
         </div>
       ) : null}
 
-      <form
-        action={createRider}
-        encType="multipart/form-data"
-        className="space-y-5 rounded-lg border bg-background p-6 shadow-sm"
-      >
-        <Field label="Name" name="name" required />
-        <Field
-          label="Phone (10 digits)"
-          name="phone"
-          required
-          inputProps={{ pattern: "[0-9]{10}", inputMode: "numeric" }}
-        />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <SelectField label="Source" name="source" required>
-            <option value="">Select source…</option>
-            {riderSources.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </SelectField>
+      <Card>
+        <form
+          action={createRider}
+          encType="multipart/form-data"
+          className="space-y-5 p-6"
+        >
+          <Field label="Name" name="name" required />
+          <Field
+            label="Phone (10 digits)"
+            name="phone"
+            required
+            inputProps={{
+              pattern: "[0-9]{10}",
+              inputMode: "numeric",
+              placeholder: "9876543210",
+            }}
+          />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <SelectField label="Source" name="source" required>
+              <option value="">Select source…</option>
+              {riderSources.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </SelectField>
+            <Field
+              label="Rider ID"
+              name="app_rider_id"
+              hint="Mobile app rider ID (optional)"
+            />
+          </div>
           <SelectField label="Location" name="location_id" required>
             <option value="">Select location…</option>
             {locations.map((l) => (
@@ -172,130 +183,27 @@ export default async function NewRiderPage({
               </option>
             ))}
           </SelectField>
-        </div>
-        <Field label="Address" name="address" />
-        <TextareaField label="Notes" name="notes" />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <FileField label="Photo" name="photo" accept="image/*" />
-          <FileField
-            label="ID proof"
-            name="id_proof"
-            accept="image/*,application/pdf"
-          />
-        </div>
-        <div className="flex items-center justify-end gap-3 border-t pt-4">
-          <Link
-            href="/riders"
-            className="text-sm text-muted-foreground hover:underline"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Create rider
-          </button>
-        </div>
-      </form>
-    </div>
-  )
-}
-
-function Field({
-  label,
-  name,
-  required,
-  inputProps,
-}: {
-  label: string
-  name: string
-  required?: boolean
-  inputProps?: React.InputHTMLAttributes<HTMLInputElement>
-}) {
-  return (
-    <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium">
-        {label}
-        {required ? " *" : ""}
-      </label>
-      <input
-        id={name}
-        name={name}
-        required={required}
-        {...inputProps}
-        className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      />
-    </div>
-  )
-}
-
-function SelectField({
-  label,
-  name,
-  required,
-  children,
-}: {
-  label: string
-  name: string
-  required?: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium">
-        {label}
-        {required ? " *" : ""}
-      </label>
-      <select
-        id={name}
-        name={name}
-        required={required}
-        className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        {children}
-      </select>
-    </div>
-  )
-}
-
-function TextareaField({ label, name }: { label: string; name: string }) {
-  return (
-    <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium">
-        {label}
-      </label>
-      <textarea
-        id={name}
-        name={name}
-        rows={3}
-        className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      />
-    </div>
-  )
-}
-
-function FileField({
-  label,
-  name,
-  accept,
-}: {
-  label: string
-  name: string
-  accept?: string
-}) {
-  return (
-    <div className="space-y-1">
-      <label htmlFor={name} className="block text-sm font-medium">
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type="file"
-        accept={accept}
-        className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5 file:text-xs file:font-medium"
-      />
+          <Field label="Address" name="address" />
+          <TextareaField label="Notes" name="notes" />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <FileField label="Photo" name="photo" accept="image/*" hint="≤ 400 KB" />
+            <FileField
+              label="ID proof"
+              name="id_proof"
+              accept="image/*,application/pdf"
+              hint="≤ 1 MB (image or PDF)"
+            />
+          </div>
+          <div className="flex items-center justify-end gap-3 border-t pt-5">
+            <Button variant="ghost" render={<Link href="/riders" />}>
+              Cancel
+            </Button>
+            <Button type="submit" size="lg">
+              Create rider
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   )
 }

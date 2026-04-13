@@ -1,7 +1,29 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { ArrowLeft, StickyNote } from "lucide-react"
+
 import { getDeployment } from "@/lib/db/deployments"
 import { listActivityForDeployment } from "@/lib/db/activity-log"
+import { listAvailableVehicles } from "@/lib/db/vehicles"
+
+import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/ui/page-header"
+import { Card } from "@/components/ui/card"
+import { EventDialogs } from "./event-dialogs"
+import {
+  ActionBadge,
+  DeploymentStatusBadge,
+  PayStatusBadge,
+} from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 export const metadata = {
   title: "Deployment · Transcil Fleet Ops",
@@ -15,146 +37,209 @@ export default async function DeploymentDetailPage({
   const d = await getDeployment(params.id)
   if (!d) notFound()
 
-  const log = await listActivityForDeployment(params.id)
+  const [log, availableVehicles] = await Promise.all([
+    listActivityForDeployment(params.id),
+    d.status === "ACTIVE" || d.status === "LOCKED"
+      ? listAvailableVehicles()
+      : Promise.resolve([]),
+  ])
+
+  const inr = (v: number | null | undefined) =>
+    v != null ? `₹${Number(v).toLocaleString("en-IN")}` : "—"
+
+  const showActions = d.status === "ACTIVE" || d.status === "LOCKED"
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">
-            {d.rider_name ?? "Deployment"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            VTD {d.vtd_no ?? "—"} · {d.hub_name ?? "—"}
-          </p>
-        </div>
-        <Link
-          href="/deployments"
-          className="text-sm text-muted-foreground hover:underline"
-        >
-          ← Back to list
-        </Link>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <PageHeader
+        breadcrumbs={[
+          { label: "Deployments", href: "/deployments" },
+          { label: d.rider_name ?? "Deployment" },
+        ]}
+        title={d.rider_name ?? "Deployment"}
+        description={`VTD ${d.vtd_no ?? "—"} · ${d.hub_name ?? "—"}`}
+        action={
+          <Button variant="ghost" render={<Link href="/deployments" />}>
+            <ArrowLeft /> Back
+          </Button>
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <InfoCard label="Status" value={d.status} />
-        <InfoCard
-          label="Action"
-          value={d.action ? d.action.replace("_", " ") : "—"}
-        />
-        <InfoCard label="Pay status" value={d.pay_status ?? "—"} />
-        <InfoCard
-          label="Days left"
-          value={d.days_left != null ? String(d.days_left) : "—"}
-        />
-        <InfoCard label="Deploy date" value={d.deploy_date} />
-        <InfoCard label="Due date" value={d.due_date} />
-        <InfoCard label="Weeks" value={String(d.weeks)} />
-        <InfoCard
-          label="Rate"
-          value={`₹${Number(d.rate_inr).toLocaleString("en-IN")}/wk`}
-        />
-        <InfoCard
-          label="Deposit required"
-          value={`₹${Number(d.deposit_required_inr).toLocaleString("en-IN")}`}
-        />
-        <InfoCard
-          label="Total due"
-          value={
-            d.total_due != null
-              ? `₹${Number(d.total_due).toLocaleString("en-IN")}`
-              : "—"
-          }
-        />
-        <InfoCard
-          label="Total paid"
-          value={
-            d.total_paid != null
-              ? `₹${Number(d.total_paid).toLocaleString("en-IN")}`
-              : "—"
-          }
-        />
-        <InfoCard
-          label="Balance"
-          value={
-            d.balance != null
-              ? `₹${Number(d.balance).toLocaleString("en-IN")}`
-              : "—"
-          }
-        />
-      </div>
+      <div className={`flex flex-col gap-6 ${showActions ? "lg:flex-row" : ""}`}>
+        {/* Left sidebar — Quick actions (sticky, desktop only) */}
+        {showActions ? (
+          <aside className="shrink-0 lg:w-48">
+            <div className="lg:sticky lg:top-6">
+              <Card className="space-y-3 p-4">
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Quick actions
+                </div>
+                <EventDialogs
+                  deploymentId={d.id}
+                  deploymentStatus={d.status}
+                  currentVtd={d.vtd_no ?? "—"}
+                  availableVehicles={availableVehicles.map((v: { id: string; vtd_no: string; colour: string | null }) => ({
+                    id: v.id,
+                    vtd_no: v.vtd_no,
+                    colour: v.colour,
+                  }))}
+                />
+              </Card>
+            </div>
+          </aside>
+        ) : null}
 
-      {d.notes ? (
-        <div className="rounded-lg border bg-background p-5">
-          <div className="text-xs font-medium uppercase text-muted-foreground">
-            Notes
-          </div>
-          <div className="mt-2 whitespace-pre-wrap text-sm">{d.notes}</div>
-        </div>
-      ) : null}
-
-      <div>
-        <h2 className="mb-2 text-lg font-semibold">Activity log</h2>
-        <div className="overflow-hidden rounded-lg border bg-background">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Date</th>
-                <th className="px-3 py-2 text-left font-medium">Event</th>
-                <th className="px-3 py-2 text-right font-medium">Amount</th>
-                <th className="px-3 py-2 text-left font-medium">Txn ID</th>
-                <th className="px-3 py-2 text-left font-medium">Notes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {log.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="px-3 py-6 text-center text-xs text-muted-foreground"
+        {/* Right — main content */}
+        <div className="min-w-0 flex-1 space-y-6">
+          {/* Headline status row */}
+          <Card className="flex flex-wrap items-center gap-3 p-4">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+              Status
+            </span>
+            <DeploymentStatusBadge status={d.status} />
+            <span className="mx-1 text-border">·</span>
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+              Action
+            </span>
+            <ActionBadge action={d.action} />
+            <span className="mx-1 text-border">·</span>
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+              Pay
+            </span>
+            <PayStatusBadge status={d.pay_status} />
+            <div className="ml-auto text-sm tabular-nums text-muted-foreground">
+              {d.days_left != null ? (
+                <>
+                  <span
+                    className={
+                      d.days_left < 0
+                        ? "font-semibold text-destructive"
+                        : d.days_left === 0
+                        ? "font-semibold text-warning-foreground"
+                        : "font-semibold text-foreground"
+                    }
                   >
-                    No activity yet. Payments and state changes land here when
-                    Module 4 ships.
-                  </td>
-                </tr>
-              ) : (
-                log.map((e: Record<string, unknown>) => (
-                  <tr key={e.id as string}>
-                    <td className="px-3 py-2 text-xs">
-                      {e.event_date as string}
-                    </td>
-                    <td className="px-3 py-2 font-medium">
-                      {e.event_type as string}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono text-xs">
-                      {e.amount_inr != null
-                        ? `₹${Number(e.amount_inr).toLocaleString("en-IN")}`
-                        : "—"}
-                    </td>
-                    <td className="px-3 py-2 font-mono text-xs">
-                      {(e.transaction_id as string) ?? "—"}
-                    </td>
-                    <td className="px-3 py-2 text-xs">
-                      {(e.notes as string) ?? ""}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                    {d.days_left}
+                  </span>{" "}
+                  days left
+                </>
+              ) : null}
+            </div>
+          </Card>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <InfoCard label="Deploy date" value={d.deploy_date} />
+            <InfoCard label="Due date" value={d.due_date} />
+            <InfoCard label="Weeks" value={String(d.weeks)} />
+            <InfoCard
+              label="Rate"
+              value={`${inr(d.rate_inr)}/wk`}
+            />
+            <InfoCard label="Deposit required" value={inr(d.deposit_required_inr)} />
+            <InfoCard label="Total due" value={inr(d.total_due)} />
+            <InfoCard label="Total paid" value={inr(d.total_paid)} />
+            <InfoCard
+              label="Balance"
+              value={inr(d.balance)}
+              accent={d.balance != null && d.balance > 0}
+            />
+          </div>
+
+          {d.notes ? (
+            <Card className="p-5">
+              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <StickyNote className="size-3.5" /> Notes
+              </div>
+              <div className="mt-2 whitespace-pre-wrap text-sm">{d.notes}</div>
+            </Card>
+          ) : null}
+
+          <div className="space-y-3">
+            <h2 className="text-base font-semibold">Activity log</h2>
+            <TableContainer className="max-h-none">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Event</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Weeks</TableHead>
+                    <TableHead>Txn ID</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {log.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="py-8 text-center text-xs text-muted-foreground"
+                      >
+                        No activity yet. Use the quick actions to record a
+                        payment, deposit, refund or reminder call.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    log.map((e: Record<string, unknown>) => (
+                      <TableRow key={e.id as string}>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {e.event_date as string}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {e.event_type as string}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs tabular-nums">
+                          {e.amount_inr != null
+                            ? `₹${Number(e.amount_inr).toLocaleString("en-IN")}`
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-xs tabular-nums">
+                          {e.extra_weeks != null
+                            ? `+${e.extra_weeks as number}`
+                            : e.week_number != null
+                              ? String(e.week_number as number)
+                              : "—"}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs text-muted-foreground">
+                          {(e.transaction_id as string) ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {(e.notes as string) ?? ""}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function InfoCard({ label, value }: { label: string; value: string }) {
+function InfoCard({
+  label,
+  value,
+  accent,
+}: {
+  label: string
+  value: string
+  accent?: boolean
+}) {
   return (
-    <div className="rounded-lg border bg-background p-4">
-      <div className="text-xs font-medium uppercase text-muted-foreground">
+    <Card className="p-4">
+      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
-      <div className="mt-1 text-sm font-medium">{value}</div>
-    </div>
+      <div
+        className={`mt-1 text-sm font-semibold tabular-nums ${
+          accent ? "text-destructive" : "text-foreground"
+        }`}
+      >
+        {value}
+      </div>
+    </Card>
   )
 }
