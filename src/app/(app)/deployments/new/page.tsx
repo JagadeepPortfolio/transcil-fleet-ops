@@ -19,6 +19,7 @@ import {
   CheckboxField,
   FormError,
 } from "@/components/ui/form-fields"
+import { RentalFields } from "./rental-fields"
 
 export const metadata = {
   title: "New deployment · Transcil Fleet Ops",
@@ -31,6 +32,7 @@ async function createDeployment(formData: FormData) {
     rider_id: formData.get("rider_id"),
     vehicle_id: formData.get("vehicle_id"),
     hub_id: formData.get("hub_id"),
+    rental_type: formData.get("rental_type"),
     deploy_date: formData.get("deploy_date"),
     weeks: formData.get("weeks"),
     rate_inr: formData.get("rate_inr"),
@@ -55,6 +57,7 @@ async function createDeployment(formData: FormData) {
       rider_id: input.rider_id,
       vehicle_id: input.vehicle_id,
       hub_id: input.hub_id,
+      rental_type: input.rental_type,
       deploy_date: input.deploy_date,
       weeks: input.weeks,
       rate_inr: input.rate_inr,
@@ -94,6 +97,7 @@ export default async function NewDeploymentPage({
   ])
 
   const today = new Date().toISOString().slice(0, 10)
+  const defaultHubId = hubs.find((h) => h.code === "NAG")?.id
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -146,7 +150,12 @@ export default async function NewDeploymentPage({
             )}
           </SelectField>
 
-          <SelectField label="Hub" name="hub_id" required>
+          <SelectField
+            label="Hub"
+            name="hub_id"
+            required
+            defaultValue={defaultHubId ? String(defaultHubId) : ""}
+          >
             <option value="">Select a hub…</option>
             {hubs.map((h) => (
               <option key={h.id} value={h.id}>
@@ -155,31 +164,7 @@ export default async function NewDeploymentPage({
             ))}
           </SelectField>
 
-          <div className="grid gap-5 sm:grid-cols-3">
-            <Field
-              label="Deploy date"
-              name="deploy_date"
-              type="date"
-              defaultValue={today}
-              required
-            />
-            <Field
-              label="Weeks"
-              name="weeks"
-              type="number"
-              inputProps={{ min: 1, max: 52 }}
-              defaultValue="4"
-              required
-            />
-            <Field
-              label="Rate (₹/week)"
-              name="rate_inr"
-              type="number"
-              inputProps={{ min: 0, step: "0.01" }}
-              defaultValue="1500"
-              required
-            />
-          </div>
+          <RentalFields today={today} />
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field
@@ -187,7 +172,7 @@ export default async function NewDeploymentPage({
               name="deposit_required_inr"
               type="number"
               inputProps={{ min: 0, step: "0.01" }}
-              defaultValue="3000"
+              defaultValue="2000"
             />
             <div className="flex items-end">
               <CheckboxField

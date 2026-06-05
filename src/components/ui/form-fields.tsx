@@ -73,6 +73,8 @@ export function SelectField({
   required,
   children,
   defaultValue,
+  value,
+  onChange,
   hint,
 }: {
   label: string
@@ -80,6 +82,8 @@ export function SelectField({
   required?: boolean
   children: React.ReactNode
   defaultValue?: string
+  value?: string
+  onChange?: React.ChangeEventHandler<HTMLSelectElement>
   hint?: string
 }) {
   return (
@@ -91,7 +95,9 @@ export function SelectField({
         id={name}
         name={name}
         required={required}
-        defaultValue={defaultValue}
+        defaultValue={value === undefined ? defaultValue : undefined}
+        value={value}
+        onChange={onChange}
         className={cn(baseInput, "appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239ca3af%22 stroke-width=%222%22><path d=%22m6 9 6 6 6-6%22/></svg>')] bg-[length:16px] bg-[right_10px_center] bg-no-repeat pr-9")}
       >
         {children}

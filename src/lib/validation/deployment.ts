@@ -1,10 +1,13 @@
 import { z } from "zod"
 import { dbUuid } from "./helpers"
 
+export const rentalTypes = ["Weekly", "Monthly"] as const
+
 export const deploymentCreateSchema = z.object({
   rider_id: dbUuid("Pick a rider"),
   vehicle_id: dbUuid("Pick a vehicle"),
   hub_id: z.coerce.number().int().positive("Pick a hub"),
+  rental_type: z.enum(rentalTypes),
   deploy_date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
