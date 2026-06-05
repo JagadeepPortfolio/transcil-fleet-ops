@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { ArrowLeft } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
-import { listRiders } from "@/lib/db/riders"
+import { listRidersWithoutActiveDeployment } from "@/lib/db/riders"
 import { listAvailableVehicles } from "@/lib/db/vehicles"
 import { listHubs } from "@/lib/db/hubs"
 import { logActivityEvent } from "@/lib/db/activity-log"
@@ -160,7 +160,7 @@ export default async function NewDeploymentPage({
   searchParams: { error?: string; rider?: string }
 }) {
   const [riders, vehicles, hubs] = await Promise.all([
-    listRiders(),
+    listRidersWithoutActiveDeployment(),
     listAvailableVehicles(),
     listHubs(),
   ])

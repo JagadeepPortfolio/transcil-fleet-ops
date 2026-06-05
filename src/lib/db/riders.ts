@@ -48,6 +48,41 @@ export async function getRider(id: string) {
   return data as unknown as RiderRow | null
 }
 
+/**
+ * Riders eligible for a new deployment: those without an ACTIVE deployment.
+ * Mirrors listAvailableVehicles() — a rider can hold only one ACTIVE
+ * deployment at a time (invariant #3, deployments_active_rider_uniq).
+ * Riders whose deployments are RETURNED/CANCELLED (or who have none) are free.
+ */
+export async function listRidersWithoutActiveDeployment() {
+  const supabase = createClient()
+  const [ridersRes, activeRes] = await Promise.all([
+    supabase
+      .from("riders")
+      .select("id, name, phone, app_rider_id")
+      .is("deleted_at", null)
+      .order("name", { ascending: true }),
+    supabase
+      .from("deployments")
+      .select("rider_id")
+      .eq("status", "ACTIVE")
+      .is("deleted_at", null),
+  ])
+  if (ridersRes.error) throw ridersRes.error
+  if (activeRes.error) throw activeRes.error
+  const active = new Set(
+    (activeRes.data ?? []).map((d) => (d as { rider_id: string }).rider_id)
+  )
+  return (ridersRes.data ?? []).filter(
+    (r) => !active.has((r as { id: string }).id)
+  ) as Array<{
+    id: string
+    name: string
+    phone: string
+    app_rider_id: string | null
+  }>
+}
+
 export async function findRiderByPhone(phone: string) {
   const supabase = createClient()
   const { data, error } = await supabase
