@@ -31,8 +31,10 @@ export const metadata = {
 
 export default async function DeploymentDetailPage({
   params,
+  searchParams,
 }: {
   params: { id: string }
+  searchParams: { warn?: string }
 }) {
   const d = await getDeployment(params.id)
   if (!d) notFound()
@@ -64,6 +66,12 @@ export default async function DeploymentDetailPage({
           </Button>
         }
       />
+
+      {searchParams.warn ? (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+          {searchParams.warn}
+        </div>
+      ) : null}
 
       <div className={`flex flex-col gap-6 ${showActions ? "lg:flex-row" : ""}`}>
         {/* Left sidebar — Quick actions (sticky, desktop only) */}

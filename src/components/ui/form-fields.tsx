@@ -170,11 +170,15 @@ export function CheckboxField({
   label,
   name,
   defaultChecked,
+  checked,
+  onChange,
   hint,
 }: {
   label: React.ReactNode
   name: string
   defaultChecked?: boolean
+  checked?: boolean
+  onChange?: React.ChangeEventHandler<HTMLInputElement>
   hint?: string
 }) {
   return (
@@ -182,7 +186,9 @@ export function CheckboxField({
       <input
         type="checkbox"
         name={name}
-        defaultChecked={defaultChecked}
+        defaultChecked={checked === undefined ? defaultChecked : undefined}
+        checked={checked}
+        onChange={onChange}
         className="mt-0.5 size-4 rounded border-input"
       />
       <span>

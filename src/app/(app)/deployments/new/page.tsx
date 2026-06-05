@@ -7,16 +7,16 @@ import { createClient } from "@/lib/supabase/server"
 import { listRiders } from "@/lib/db/riders"
 import { listAvailableVehicles } from "@/lib/db/vehicles"
 import { listHubs } from "@/lib/db/hubs"
+import { logActivityEvent } from "@/lib/db/activity-log"
 import { deploymentCreateSchema } from "@/lib/validation/deployment"
+import { paymentSchema, depositSchema } from "@/lib/validation/activity"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
 import { Card } from "@/components/ui/card"
 import {
-  Field,
   SelectField,
   TextareaField,
-  CheckboxField,
   FormError,
 } from "@/components/ui/form-fields"
 import { RentalFields } from "./rental-fields"
@@ -47,6 +47,41 @@ async function createDeployment(formData: FormData) {
   }
 
   const input = parsed.data
+
+  // Initial payment — always recorded with the deployment.
+  const payParsed = paymentSchema.safeParse({
+    event_date: input.deploy_date,
+    amount_inr: formData.get("payment_amount_inr"),
+    payment_mode: formData.get("payment_mode"),
+    week_number: formData.get("payment_week_number") ?? "",
+    transaction_id: formData.get("payment_txn_id") ?? "",
+  })
+  if (!payParsed.success) {
+    const msg = payParsed.error.issues.map((i) => i.message).join("; ")
+    redirect(
+      `/deployments/new?error=${encodeURIComponent(`Initial payment — ${msg}`)}`
+    )
+  }
+
+  // Deposit — only when a new deposit is needed and a non-zero amount is set.
+  const wantDeposit =
+    input.new_deposit_needed && input.deposit_required_inr > 0
+  let depParsed: ReturnType<typeof depositSchema.safeParse> | null = null
+  if (wantDeposit) {
+    depParsed = depositSchema.safeParse({
+      event_date: input.deploy_date,
+      amount_inr: input.deposit_required_inr,
+      payment_mode: formData.get("deposit_mode"),
+      transaction_id: formData.get("deposit_txn_id") ?? "",
+    })
+    if (!depParsed.success) {
+      const msg = depParsed.error.issues.map((i) => i.message).join("; ")
+      redirect(
+        `/deployments/new?error=${encodeURIComponent(`Deposit — ${msg}`)}`
+      )
+    }
+  }
+
   const supabase = createClient()
   const { data: userRes } = await supabase.auth.getUser()
   const userId = userRes.user?.id
@@ -80,9 +115,43 @@ async function createDeployment(formData: FormData) {
     redirect(`/deployments/new?error=${encodeURIComponent(friendly)}`)
   }
 
+  if (!row) redirect("/deployments")
+  const deploymentId = (row as { id: string }).id
+
+  // Record the collection events through the single write path. Deposit first
+  // (start-of-contract ordering), then the first payment.
+  let warn: string | null = null
+  try {
+    if (depParsed && depParsed.success) {
+      await logActivityEvent(deploymentId, {
+        type: "DEPOSIT",
+        eventDate: depParsed.data.event_date,
+        amountInr: depParsed.data.amount_inr,
+        paymentMode: depParsed.data.payment_mode,
+        transactionId: depParsed.data.transaction_id,
+      })
+    }
+    await logActivityEvent(deploymentId, {
+      type: "PAYMENT",
+      eventDate: payParsed.data.event_date,
+      amountInr: payParsed.data.amount_inr,
+      paymentMode: payParsed.data.payment_mode,
+      weekNumber: payParsed.data.week_number,
+      transactionId: payParsed.data.transaction_id,
+    })
+  } catch {
+    warn =
+      "Deployment created, but recording the initial payment/deposit failed — add it from the timeline below."
+  }
+
   revalidatePath("/deployments")
-  if (row) redirect(`/deployments/${(row as { id: string }).id}`)
-  redirect("/deployments")
+  revalidatePath("/dashboard")
+  revalidatePath(`/deployments/${deploymentId}`)
+  redirect(
+    warn
+      ? `/deployments/${deploymentId}?warn=${encodeURIComponent(warn)}`
+      : `/deployments/${deploymentId}`
+  )
 }
 
 export default async function NewDeploymentPage({
@@ -165,24 +234,6 @@ export default async function NewDeploymentPage({
           </SelectField>
 
           <RentalFields today={today} />
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field
-              label="Deposit required (₹)"
-              name="deposit_required_inr"
-              type="number"
-              inputProps={{ min: 0, step: "0.01" }}
-              defaultValue="2000"
-            />
-            <div className="flex items-end">
-              <CheckboxField
-                label="New deposit needed"
-                name="new_deposit_needed"
-                defaultChecked
-                hint="Uncheck if carried forward from a prior deployment."
-              />
-            </div>
-          </div>
 
           <TextareaField label="Notes" name="notes" />
 
