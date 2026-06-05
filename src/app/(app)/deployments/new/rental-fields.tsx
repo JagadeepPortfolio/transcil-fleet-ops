@@ -184,42 +184,40 @@ export function RentalFields({ today }: { today: string }) {
         <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Deposit
         </legend>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field
-            label="Deposit required (₹)"
-            name="deposit_required_inr"
-            type="number"
-            inputProps={{ min: 0, step: "0.01" }}
-            defaultValue={DEPOSIT_DEFAULT}
-          />
-          <div className="flex items-end">
-            <CheckboxField
-              label="New deposit needed"
-              name="new_deposit_needed"
-              checked={depositNeeded}
-              onChange={(e) => setDepositNeeded(e.target.checked)}
-              hint="Uncheck if carried forward from a prior deployment."
-            />
-          </div>
-        </div>
+        <CheckboxField
+          label="New deposit needed"
+          name="new_deposit_needed"
+          checked={depositNeeded}
+          onChange={(e) => setDepositNeeded(e.target.checked)}
+          hint="Uncheck if carried forward from a prior deployment."
+        />
         {depositNeeded ? (
-          <div className="grid gap-5 sm:grid-cols-2">
-            <SelectField label="Deposit payment mode" name="deposit_mode" required>
-              <option value="" disabled>
-                Choose…
-              </option>
-              {PAYMENT_MODES.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </SelectField>
+          <>
             <Field
-              label="Transaction ID (UTR)"
-              name="deposit_txn_id"
-              hint="UPI/bank ref — leave blank for cash."
+              label="Deposit required (₹)"
+              name="deposit_required_inr"
+              type="number"
+              inputProps={{ min: 0, step: "0.01" }}
+              defaultValue={DEPOSIT_DEFAULT}
             />
-          </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <SelectField label="Deposit payment mode" name="deposit_mode" required>
+                <option value="" disabled>
+                  Choose…
+                </option>
+                {PAYMENT_MODES.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </SelectField>
+              <Field
+                label="Transaction ID (UTR)"
+                name="deposit_txn_id"
+                hint="UPI/bank ref — leave blank for cash."
+              />
+            </div>
+          </>
         ) : null}
       </fieldset>
     </>
