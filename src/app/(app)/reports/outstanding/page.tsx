@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
 import { getOutstandingBalances, type AgeingBucket } from "@/lib/db/reports"
+import { formatDate } from "@/lib/dates"
 import { Card } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
@@ -180,7 +181,7 @@ export default async function OutstandingPage() {
                       {r.hub_name ?? "—"}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {r.due_date}
+                      {formatDate(r.due_date)}
                     </TableCell>
                     <TableCell>
                       <span

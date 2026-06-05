@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { format } from "date-fns"
+import { formatDate } from "@/lib/dates"
 import { ArrowLeft, Plus, StickyNote } from "lucide-react"
 
 import { getRider } from "@/lib/db/riders"
@@ -86,7 +86,7 @@ export default async function RiderDetailPage({
         <InfoCard label="Address" value={rider.address ?? "—"} />
         <InfoCard
           label="Added"
-          value={format(new Date(rider.created_at), "dd MMM yyyy")}
+          value={formatDate(rider.created_at)}
         />
         <InfoCard
           label="Photo"
@@ -146,10 +146,10 @@ export default async function RiderDetailPage({
                 rows.map((d) => (
                   <TableRow key={d.id}>
                     <TableCell className="text-xs text-muted-foreground">
-                      {d.deploy_date}
+                      {formatDate(d.deploy_date)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
-                      {d.due_date}
+                      {formatDate(d.due_date)}
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {d.vtd_no ?? "—"}

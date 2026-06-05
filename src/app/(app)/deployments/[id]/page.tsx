@@ -5,6 +5,7 @@ import { ArrowLeft, StickyNote } from "lucide-react"
 import { getDeployment } from "@/lib/db/deployments"
 import { listActivityForDeployment } from "@/lib/db/activity-log"
 import { listAvailableVehicles } from "@/lib/db/vehicles"
+import { formatDate } from "@/lib/dates"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
@@ -136,8 +137,8 @@ export default async function DeploymentDetailPage({
           </Card>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <InfoCard label="Deploy date" value={d.deploy_date} />
-            <InfoCard label="Due date" value={d.due_date} />
+            <InfoCard label="Deploy date" value={formatDate(d.deploy_date)} />
+            <InfoCard label="Due date" value={formatDate(d.due_date)} />
             <InfoCard label="Weeks" value={String(d.weeks)} />
             <InfoCard
               label="Rate"
@@ -191,7 +192,7 @@ export default async function DeploymentDetailPage({
                     log.map((e: Record<string, unknown>) => (
                       <TableRow key={e.id as string}>
                         <TableCell className="text-xs text-muted-foreground">
-                          {e.event_date as string}
+                          {formatDate(e.event_date as string)}
                         </TableCell>
                         <TableCell className="font-medium">
                           {e.event_type as string}

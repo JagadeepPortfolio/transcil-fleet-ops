@@ -7,6 +7,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/ui/data-table"
 import { ActionBadge, DeploymentStatusBadge, PayStatusBadge } from "@/components/ui/badge"
 import type { DeploymentEnrichedRow } from "@/lib/db/deployments"
+import { formatDate } from "@/lib/dates"
 
 type Row = DeploymentEnrichedRow
 
@@ -59,7 +60,7 @@ const columns: ColumnDef<Row>[] = [
     header: "Deploy",
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
-        {row.original.deploy_date}
+        {formatDate(row.original.deploy_date)}
       </span>
     ),
   },
@@ -68,7 +69,7 @@ const columns: ColumnDef<Row>[] = [
     header: "Due",
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
-        {row.original.due_date}
+        {formatDate(row.original.due_date)}
       </span>
     ),
   },

@@ -2,11 +2,11 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { format } from "date-fns"
 import { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/ui/data-table"
 import type { RiderRow } from "@/lib/db/riders"
+import { formatDate } from "@/lib/dates"
 
 const columns: ColumnDef<RiderRow>[] = [
   {
@@ -69,7 +69,7 @@ const columns: ColumnDef<RiderRow>[] = [
     header: "Added",
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
-        {format(new Date(row.original.created_at), "dd MMM yyyy")}
+        {formatDate(row.original.created_at)}
       </span>
     ),
   },

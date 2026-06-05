@@ -3,8 +3,9 @@ import {
   AlertTriangle,
   ArrowRight,
   Bike,
+  CircleCheck,
   Clock,
-  PhoneCall,
+  Lock,
   ShieldAlert,
   Truck,
   Users,
@@ -12,6 +13,7 @@ import {
 
 import { createClient } from "@/lib/supabase/server"
 import { listDeployments } from "@/lib/db/deployments"
+import { listAvailableVehicles } from "@/lib/db/vehicles"
 import { Card } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
@@ -24,11 +26,23 @@ export const metadata = {
 export default async function DashboardPage() {
   const supabase = createClient()
 
-  const [activeRes, riderRes, vehicleRes, deployments] = await Promise.all([
+  const [
+    activeRes,
+    lockedRes,
+    riderRes,
+    vehicleRes,
+    availableVehicles,
+    deployments,
+  ] = await Promise.all([
     supabase
       .from("deployments")
       .select("id", { count: "exact", head: true })
       .eq("status", "ACTIVE")
+      .is("deleted_at", null),
+    supabase
+      .from("deployments")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "LOCKED")
       .is("deleted_at", null),
     supabase
       .from("riders")
@@ -38,12 +52,11 @@ export default async function DashboardPage() {
       .from("vehicles")
       .select("id", { count: "exact", head: true })
       .is("deleted_at", null),
+    listAvailableVehicles(),
     listDeployments(),
   ])
 
   const lockNow = deployments.filter((d) => d.action === "LOCK_NOW").length
-  const atRisk = deployments.filter((d) => d.action === "AT_RISK").length
-  const callToday = deployments.filter((d) => d.action === "CALL_TODAY").length
 
   const kpis = [
     {
@@ -59,10 +72,22 @@ export default async function DashboardPage() {
       href: "/riders",
     },
     {
-      label: "Vehicles",
+      label: "Total Vehicles",
       value: vehicleRes.count ?? 0,
       icon: Bike,
       href: "/admin/vehicles",
+    },
+    {
+      label: "Available Vehicles",
+      value: availableVehicles.length,
+      icon: CircleCheck,
+      href: "/admin/vehicles",
+    },
+    {
+      label: "Locked vehicles",
+      value: lockedRes.count ?? 0,
+      icon: Lock,
+      href: "/deployments",
     },
   ]
 
@@ -74,16 +99,11 @@ export default async function DashboardPage() {
       tone: "destructive" as const,
     },
     {
-      label: "At risk today",
-      value: atRisk,
+      // Overdue deployments — same set as "Lock now", framed as a status.
+      label: "Due Date Crossed",
+      value: lockNow,
       icon: AlertTriangle,
       tone: "warning" as const,
-    },
-    {
-      label: "Call today",
-      value: callToday,
-      icon: PhoneCall,
-      tone: "info" as const,
     },
   ]
 
@@ -112,7 +132,7 @@ export default async function DashboardPage() {
         description="Operational overview. Full KPI module lands with Module 8."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {kpis.map(({ label, value, icon: Icon, href }) => (
           <Link key={label} href={href} className="group">
             <Card className="p-5 transition-colors group-hover:border-foreground/20">
@@ -133,7 +153,7 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {alerts.map(({ label, value, icon: Icon, tone }) => (
           <Card
             key={label}

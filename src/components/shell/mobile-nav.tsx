@@ -16,10 +16,10 @@ type NavItem = {
 
 const ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Deploys", href: "/deployments", icon: Truck },
   { label: "Riders", href: "/riders", icon: Users },
-  { label: "Reports", href: "/reports", icon: BarChart3 },
   { label: "Vehicles", href: "/admin/vehicles", icon: Bike, cmdOnly: true },
+  { label: "Deploys", href: "/deployments", icon: Truck },
+  { label: "Reports", href: "/reports", icon: BarChart3 },
 ]
 
 /**
