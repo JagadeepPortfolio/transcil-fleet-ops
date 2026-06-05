@@ -11,6 +11,10 @@ export type RiderRow = {
   photo_url: string | null
   source: string | null
   location_id: number | null
+  current_location: string | null
+  alt_contact_name: string | null
+  alt_contact_number: string | null
+  purpose: string | null
   notes: string | null
   created_at: string
   updated_at: string

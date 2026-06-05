@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache"
 import { ArrowLeft } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
-import { listLocations } from "@/lib/db/hubs"
 import { findRiderByPhone } from "@/lib/db/riders"
 import { riderCreateSchema, riderSources } from "@/lib/validation/rider"
 
@@ -31,7 +30,10 @@ async function createRider(formData: FormData) {
     phone: formData.get("phone"),
     source: formData.get("source"),
     app_rider_id: formData.get("app_rider_id") ?? "",
-    location_id: formData.get("location_id"),
+    current_location: formData.get("current_location") ?? "",
+    alt_contact_name: formData.get("alt_contact_name") ?? "",
+    alt_contact_number: formData.get("alt_contact_number") ?? "",
+    purpose: formData.get("purpose") ?? "",
     address: formData.get("address") ?? "",
     notes: formData.get("notes") ?? "",
   })
@@ -90,7 +92,10 @@ async function createRider(formData: FormData) {
     phone: input.phone,
     source: input.source,
     app_rider_id: input.app_rider_id || null,
-    location_id: input.location_id,
+    current_location: input.current_location,
+    alt_contact_name: input.alt_contact_name || null,
+    alt_contact_number: input.alt_contact_number || null,
+    purpose: input.purpose || null,
     address: input.address || null,
     notes: input.notes || null,
     photo_url: photoUrl,
@@ -112,7 +117,6 @@ export default async function NewRiderPage({
 }: {
   searchParams: { error?: string; existing?: string }
 }) {
-  const locations = await listLocations()
   const error = searchParams.error
 
   return (
@@ -175,14 +179,20 @@ export default async function NewRiderPage({
               hint="Mobile app rider ID (optional)"
             />
           </div>
-          <SelectField label="Location" name="location_id" required>
-            <option value="">Select location…</option>
-            {locations.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </SelectField>
+          <Field label="Current location" name="current_location" required />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Alt contact name" name="alt_contact_name" />
+            <Field
+              label="Alt contact number"
+              name="alt_contact_number"
+              inputProps={{
+                pattern: "[0-9]{10}",
+                inputMode: "numeric",
+                placeholder: "9876543210",
+              }}
+            />
+          </div>
+          <Field label="Purpose" name="purpose" />
           <Field label="Address" name="address" />
           <TextareaField label="Notes" name="notes" />
           <div className="grid gap-5 sm:grid-cols-2">

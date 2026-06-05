@@ -24,15 +24,15 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO riders (id, name, phone, source, location_id, address)
 VALUES
   ('20000000-0000-0000-0000-000000000001', 'Ravi Kumar',   '9000000001',
-     'Walk-in',     (SELECT id FROM locations WHERE name = 'Hyderabad'),    'Kukatpally, Hyderabad'),
+     'Individual',  (SELECT id FROM locations WHERE name = 'Hyderabad'),    'Kukatpally, Hyderabad'),
   ('20000000-0000-0000-0000-000000000002', 'Suresh Reddy', '9000000002',
-     'Reference',   (SELECT id FROM locations WHERE name = 'Secunderabad'), 'Tarnaka, Secunderabad'),
+     'Individual',  (SELECT id FROM locations WHERE name = 'Secunderabad'), 'Tarnaka, Secunderabad'),
   ('20000000-0000-0000-0000-000000000003', 'Arjun Varma',  '9000000003',
-     'Social Media',(SELECT id FROM locations WHERE name = 'Cyberabad'),    'Gachibowli, Cyberabad'),
+     '3PL',         (SELECT id FROM locations WHERE name = 'Cyberabad'),    'Gachibowli, Cyberabad'),
   ('20000000-0000-0000-0000-000000000004', 'Mahesh Goud',  '9000000004',
-     'Dealer',      (SELECT id FROM locations WHERE name = 'Warangal'),     'Hanamkonda, Warangal'),
+     'Camions',     (SELECT id FROM locations WHERE name = 'Warangal'),     'Hanamkonda, Warangal'),
   ('20000000-0000-0000-0000-000000000005', 'Kiran Rao',    '9000000005',
-     'App',         (SELECT id FROM locations WHERE name = 'Hyderabad'),    'LB Nagar, Hyderabad')
+     'Individual',  (SELECT id FROM locations WHERE name = 'Hyderabad'),    'LB Nagar, Hyderabad')
 ON CONFLICT (id) DO NOTHING;
 
 -- Deployments

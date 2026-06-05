@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getVehicle } from "@/lib/db/vehicles"
 import { listVehicleTypes, listHubs } from "@/lib/db/hubs"
-import { vehicleCreateSchema } from "@/lib/validation/vehicle"
+import { vehicleUpdateSchema } from "@/lib/validation/vehicle"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
@@ -20,9 +20,10 @@ export const metadata = {
 async function updateVehicle(id: string, formData: FormData) {
   "use server"
 
-  const parsed = vehicleCreateSchema.safeParse({
+  const parsed = vehicleUpdateSchema.safeParse({
     vtd_no: formData.get("vtd_no"),
     vehicle_id: formData.get("vehicle_id"),
+    chassis_no: formData.get("chassis_no") ?? "",
     vehicle_type_id: formData.get("vehicle_type_id"),
     hub_id: formData.get("hub_id"),
     colour: formData.get("colour") ?? "",
@@ -42,6 +43,7 @@ async function updateVehicle(id: string, formData: FormData) {
     .update({
       vtd_no: input.vtd_no,
       vehicle_id: input.vehicle_id,
+      chassis_no: input.chassis_no || null,
       vehicle_type_id: input.vehicle_type_id,
       hub_id: input.hub_id,
       colour: input.colour || null,
@@ -100,9 +102,14 @@ export default async function EditVehiclePage({
             defaultValue={vehicle.vtd_no}
           />
           <Field
-            label="Vehicle No"
+            label="EC No"
             name="vehicle_id"
             defaultValue={vehicle.vehicle_id ?? ""}
+          />
+          <Field
+            label="Chassis No"
+            name="chassis_no"
+            defaultValue={vehicle.chassis_no ?? ""}
           />
           <div className="grid gap-5 sm:grid-cols-2">
             <SelectField

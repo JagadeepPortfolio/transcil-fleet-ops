@@ -38,6 +38,33 @@ const columns: ColumnDef<RiderRow>[] = [
     ),
   },
   {
+    accessorKey: "purpose",
+    header: "Purpose",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {row.original.purpose ?? "—"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "alt_contact_name",
+    header: "Alt contact",
+    cell: ({ row }) => {
+      const r = row.original
+      if (!r.alt_contact_name && !r.alt_contact_number) return "—"
+      return (
+        <div className="text-xs">
+          <div>{r.alt_contact_name ?? "—"}</div>
+          {r.alt_contact_number ? (
+            <div className="font-mono text-muted-foreground">
+              {r.alt_contact_number}
+            </div>
+          ) : null}
+        </div>
+      )
+    },
+  },
+  {
     accessorKey: "created_at",
     header: "Added",
     cell: ({ row }) => (

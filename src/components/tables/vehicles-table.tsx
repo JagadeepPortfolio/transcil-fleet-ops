@@ -11,6 +11,7 @@ export type VehicleRow = {
   id: string
   vtd_no: string
   vehicle_id: string | null
+  chassis_no: string | null
   colour: string | null
   type_name: string | null
   hub_name: string | null
@@ -33,10 +34,19 @@ const columns: ColumnDef<VehicleRow>[] = [
   },
   {
     accessorKey: "vehicle_id",
-    header: "Vehicle No",
+    header: "EC No",
     cell: ({ row }) => (
       <span className="font-mono text-xs text-muted-foreground">
         {row.original.vehicle_id ?? "—"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "chassis_no",
+    header: "Chassis No",
+    cell: ({ row }) => (
+      <span className="font-mono text-xs text-muted-foreground">
+        {row.original.chassis_no ?? "—"}
       </span>
     ),
   },
@@ -90,7 +100,7 @@ export function VehiclesTable({
     <DataTable
       columns={columns}
       data={rows}
-      filterPlaceholder="Filter by VTD or Vehicle No…"
+      filterPlaceholder="Filter by VTD or EC No…"
       emptyState={emptyState}
       getRowHref={(row) => `/admin/vehicles/${row.id}`}
     />

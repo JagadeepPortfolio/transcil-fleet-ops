@@ -71,6 +71,18 @@ export default async function RiderDetailPage({
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <InfoCard label="Current location" value={rider.current_location ?? "—"} />
+        <InfoCard label="Purpose" value={rider.purpose ?? "—"} />
+        <InfoCard
+          label="Alt contact"
+          value={
+            rider.alt_contact_name || rider.alt_contact_number
+              ? `${rider.alt_contact_name ?? "—"}${
+                  rider.alt_contact_number ? ` · ${rider.alt_contact_number}` : ""
+                }`
+              : "—"
+          }
+        />
         <InfoCard label="Address" value={rider.address ?? "—"} />
         <InfoCard
           label="Added"

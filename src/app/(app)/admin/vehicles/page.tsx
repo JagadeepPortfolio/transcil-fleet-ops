@@ -17,7 +17,7 @@ export default async function VehiclesAdminPage() {
   const [vehRes, activeRes] = await Promise.all([
     supabase
       .from("vehicles")
-      .select("id, vtd_no, vehicle_id, colour, hub_id, vehicle_types(name), hubs(code, name)")
+      .select("id, vtd_no, vehicle_id, chassis_no, colour, hub_id, vehicle_types(name), hubs(code, name)")
       .is("deleted_at", null)
       .order("vtd_no", { ascending: true }),
     supabase
@@ -45,6 +45,7 @@ export default async function VehiclesAdminPage() {
     id: string
     vtd_no: string
     vehicle_id: string | null
+    chassis_no: string | null
     colour: string | null
     hub_id: number | null
     vehicle_types: { name: string } | null
@@ -57,6 +58,7 @@ export default async function VehiclesAdminPage() {
       id: v.id,
       vtd_no: v.vtd_no,
       vehicle_id: v.vehicle_id,
+      chassis_no: v.chassis_no,
       colour: v.colour,
       type_name: v.vehicle_types?.name ?? null,
       hub_name: v.hubs ? `${v.hubs.code} — ${v.hubs.name}` : null,

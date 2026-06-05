@@ -10,7 +10,12 @@ import { vehicleCreateSchema } from "@/lib/validation/vehicle"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
 import { Card } from "@/components/ui/card"
-import { Field, SelectField, FormError } from "@/components/ui/form-fields"
+import { Field, FormError } from "@/components/ui/form-fields"
+
+// Vehicle type is no longer chosen in the UI; new vehicles default to
+// E-Scooter. Hub is always Nagole (code "NAG").
+const DEFAULT_HUB_CODE = "NAG"
+const DEFAULT_VEHICLE_TYPE_NAME = "E-Scooter"
 
 export const metadata = {
   title: "New vehicle · Transcil Fleet Ops",
@@ -22,8 +27,7 @@ async function createVehicle(formData: FormData) {
   const parsed = vehicleCreateSchema.safeParse({
     vtd_no: formData.get("vtd_no"),
     vehicle_id: formData.get("vehicle_id"),
-    vehicle_type_id: formData.get("vehicle_type_id"),
-    hub_id: formData.get("hub_id"),
+    chassis_no: formData.get("chassis_no") ?? "",
     colour: formData.get("colour") ?? "",
   })
   if (!parsed.success) {
@@ -36,13 +40,27 @@ async function createVehicle(formData: FormData) {
   const { data: userRes } = await supabase.auth.getUser()
   const userId = userRes.user?.id
 
+  // Resolve the always-on defaults: Nagole hub + E-Scooter vehicle type.
+  const [hubs, types] = await Promise.all([listHubs(), listVehicleTypes()])
+  const hub = hubs.find((h) => h.code === DEFAULT_HUB_CODE) ?? hubs[0]
+  const vehicleType =
+    types.find((t) => t.name === DEFAULT_VEHICLE_TYPE_NAME) ?? types[0]
+  if (!hub || !vehicleType) {
+    redirect(
+      `/admin/vehicles/new?error=${encodeURIComponent(
+        "Reference data missing: no hub or vehicle type configured."
+      )}`
+    )
+  }
+
   const { data: row, error } = await supabase
     .from("vehicles")
     .insert({
       vtd_no: input.vtd_no,
       vehicle_id: input.vehicle_id,
-      vehicle_type_id: input.vehicle_type_id,
-      hub_id: input.hub_id,
+      chassis_no: input.chassis_no || null,
+      vehicle_type_id: vehicleType.id,
+      hub_id: hub.id,
       colour: input.colour || null,
       created_by: userId,
       updated_by: userId,
@@ -68,8 +86,6 @@ export default async function NewVehiclePage({
 }: {
   searchParams: { error?: string }
 }) {
-  const [types, hubs] = await Promise.all([listVehicleTypes(), listHubs()])
-
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <PageHeader
@@ -91,25 +107,8 @@ export default async function NewVehiclePage({
       <Card>
         <form action={createVehicle} className="space-y-5 p-6">
           <Field label="VTD number" name="vtd_no" required />
-          <Field label="Vehicle No" name="vehicle_id" required />
-          <div className="grid gap-5 sm:grid-cols-2">
-            <SelectField label="Vehicle type" name="vehicle_type_id" required>
-              <option value="">Select type…</option>
-              {types.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </SelectField>
-            <SelectField label="Hub" name="hub_id" required>
-              <option value="">Select hub…</option>
-              {hubs.map((h) => (
-                <option key={h.id} value={h.id}>
-                  {h.code} — {h.name}
-                </option>
-              ))}
-            </SelectField>
-          </div>
+          <Field label="EC No" name="vehicle_id" required />
+          <Field label="Chassis No" name="chassis_no" />
           <Field label="Colour" name="colour" />
           <div className="flex items-center justify-end gap-3 border-t pt-5">
             <Button variant="ghost" render={<Link href="/admin/vehicles" />}>
