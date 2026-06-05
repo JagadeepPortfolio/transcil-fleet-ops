@@ -17,6 +17,7 @@ import { PAYMENT_MODES } from "@/lib/validation/activity"
 const WEEKLY_DEFAULT = "1799"
 const MONTHLY_DEFAULT = "6500"
 const MONTHLY_WEEKS = 4
+const WEEKLY_WEEKS = 1
 const DEPOSIT_DEFAULT = "2000"
 
 /**
@@ -33,7 +34,7 @@ export function RentalFields({ today }: { today: string }) {
     React.useState<(typeof rentalTypes)[number]>("Weekly")
   const [weeklyRate, setWeeklyRate] = React.useState(WEEKLY_DEFAULT)
   const [monthlyRate, setMonthlyRate] = React.useState(MONTHLY_DEFAULT)
-  const [weeks, setWeeks] = React.useState(String(MONTHLY_WEEKS))
+  const [weeks, setWeeks] = React.useState(String(WEEKLY_WEEKS))
   const [depositNeeded, setDepositNeeded] = React.useState(true)
 
   const isMonthly = rentalType === "Monthly"
@@ -57,7 +58,7 @@ export function RentalFields({ today }: { today: string }) {
   function handleTypeChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const next = e.target.value as (typeof rentalTypes)[number]
     setRentalType(next)
-    if (next === "Monthly") setWeeks(String(MONTHLY_WEEKS))
+    setWeeks(String(next === "Monthly" ? MONTHLY_WEEKS : WEEKLY_WEEKS))
   }
 
   return (
@@ -171,7 +172,7 @@ export function RentalFields({ today }: { today: string }) {
             hint="Which week this payment covers."
           />
           <Field
-            label="Transaction ID"
+            label="Transaction ID (UTR)"
             name="payment_txn_id"
             hint="UPI/bank ref — leave blank for cash."
           />
@@ -214,7 +215,7 @@ export function RentalFields({ today }: { today: string }) {
               ))}
             </SelectField>
             <Field
-              label="Transaction ID"
+              label="Transaction ID (UTR)"
               name="deposit_txn_id"
               hint="UPI/bank ref — leave blank for cash."
             />

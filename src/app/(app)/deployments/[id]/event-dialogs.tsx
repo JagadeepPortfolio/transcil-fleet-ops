@@ -283,7 +283,7 @@ function PaymentDialog({
             inputProps={{ min: 1, max: 52, step: 1 }}
           />
           <Field
-            label="Transaction ID"
+            label="Transaction ID (UTR)"
             name="transaction_id"
             hint="UPI ref, receipt no, bank ref… leave blank for cash"
           />
@@ -360,7 +360,7 @@ function DepositDialog({
           ))}
         </SelectField>
         <Field
-          label="Transaction ID"
+          label="Transaction ID (UTR)"
           name="transaction_id"
           hint="UPI ref, receipt no, bank ref…"
         />
@@ -438,7 +438,7 @@ function RefundDialog({
           <option value="Carried Forward">Carried forward (new deployment)</option>
         </SelectField>
         <Field
-          label="Transaction ID"
+          label="Transaction ID (UTR)"
           name="transaction_id"
           hint="For carry-forward, reuse the CARRY-xxx ref on both sides"
         />
