@@ -57,10 +57,10 @@ export default async function DeploymentDetailPage({
       <PageHeader
         breadcrumbs={[
           { label: "Deployments", href: "/deployments" },
-          { label: d.rider_name ?? "Deployment" },
+          { label: d.deployment_code ?? d.rider_name ?? "Deployment" },
         ]}
         title={d.rider_name ?? "Deployment"}
-        description={`VTD ${d.vtd_no ?? "—"} · ${d.hub_name ?? "—"}`}
+        description={`${d.deployment_code ? `${d.deployment_code} · ` : ""}VTD ${d.vtd_no ?? "—"} · ${d.hub_name ?? "—"}`}
         action={
           <Button variant="ghost" render={<Link href="/deployments" />}>
             <ArrowLeft /> Back

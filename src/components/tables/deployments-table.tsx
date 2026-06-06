@@ -23,6 +23,18 @@ const columns: ColumnDef<Row>[] = [
     cell: ({ row }) => <ActionBadge action={row.original.action} />,
   },
   {
+    accessorKey: "deployment_code",
+    header: "Code",
+    cell: ({ row }) => (
+      <Link
+        href={`/deployments/${row.original.id}`}
+        className="font-mono text-xs font-medium hover:underline"
+      >
+        {row.original.deployment_code ?? "—"}
+      </Link>
+    ),
+  },
+  {
     accessorKey: "rider_name",
     header: "Rider",
     cell: ({ row }) => (

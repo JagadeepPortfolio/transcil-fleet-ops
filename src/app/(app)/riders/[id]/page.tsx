@@ -39,13 +39,14 @@ export default async function RiderDetailPage({
   const { data: deployments } = await supabase
     .from("deployments_enriched")
     .select(
-      "id, deploy_date, due_date, weeks, rate_inr, status, pay_status, balance, vtd_no, hub_name"
+      "id, deployment_code, deploy_date, due_date, weeks, rate_inr, status, pay_status, balance, vtd_no, hub_name"
     )
     .eq("rider_id", rider.id)
     .order("deploy_date", { ascending: false })
 
   const rows = (deployments ?? []) as Array<{
     id: string
+    deployment_code: string | null
     deploy_date: string
     due_date: string
     vtd_no: string | null
@@ -124,6 +125,7 @@ export default async function RiderDetailPage({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Code</TableHead>
                 <TableHead>Deploy</TableHead>
                 <TableHead>Due</TableHead>
                 <TableHead>VTD</TableHead>
@@ -136,7 +138,7 @@ export default async function RiderDetailPage({
               {rows.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="py-8 text-center text-xs text-muted-foreground"
                   >
                     No deployments yet.
@@ -145,6 +147,14 @@ export default async function RiderDetailPage({
               ) : (
                 rows.map((d) => (
                   <TableRow key={d.id}>
+                    <TableCell>
+                      <Link
+                        href={`/deployments/${d.id}`}
+                        className="font-mono text-xs font-medium hover:underline"
+                      >
+                        {d.deployment_code ?? "—"}
+                      </Link>
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {formatDate(d.deploy_date)}
                     </TableCell>

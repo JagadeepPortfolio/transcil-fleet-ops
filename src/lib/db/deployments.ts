@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 
 export type DeploymentEnrichedRow = {
   id: string
+  deployment_code: string | null
   rider_id: string
   vehicle_id: string
   hub_id: number
