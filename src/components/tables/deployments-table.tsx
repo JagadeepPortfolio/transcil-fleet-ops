@@ -26,12 +26,9 @@ const columns: ColumnDef<Row>[] = [
     accessorKey: "deployment_code",
     header: "Code",
     cell: ({ row }) => (
-      <Link
-        href={`/deployments/${row.original.id}`}
-        className="font-mono text-xs font-medium hover:underline"
-      >
+      <span className="font-mono text-xs font-medium">
         {row.original.deployment_code ?? "—"}
-      </Link>
+      </span>
     ),
   },
   {
@@ -57,9 +54,14 @@ const columns: ColumnDef<Row>[] = [
   },
   {
     accessorKey: "vtd_no",
-    header: "VTD",
+    header: "VTD / EC No",
     cell: ({ row }) => (
-      <span className="font-mono text-xs">{row.original.vtd_no ?? "—"}</span>
+      <div className="leading-tight">
+        <div className="font-mono text-xs">{row.original.vtd_no ?? "—"}</div>
+        <div className="font-mono text-[11px] text-muted-foreground">
+          EC: {row.original.vehicle_serial ?? "—"}
+        </div>
+      </div>
     ),
   },
   {
@@ -141,7 +143,6 @@ export function DeploymentsTable({
       data={rows}
       filterPlaceholder="Filter by rider, phone, VTD…"
       emptyState={emptyState}
-      getRowHref={(row) => `/deployments/${row.id}`}
     />
   )
 }
