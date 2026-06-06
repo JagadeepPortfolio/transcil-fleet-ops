@@ -35,7 +35,7 @@ const STATIC_NAVIGATION: PaletteItem[] = [
   { key: "nav-deployments", label: "Deployments", href: "/deployments", icon: Truck },
   { key: "nav-riders", label: "Riders", href: "/riders", icon: Users },
   { key: "nav-reports", label: "Reports", href: "/reports", icon: BarChart3 },
-  { key: "nav-vehicles", label: "Vehicles (admin)", href: "/admin/vehicles", icon: Bike },
+  { key: "nav-vehicles", label: "Vehicles", href: "/admin/vehicles", icon: Bike },
   { key: "nav-help", label: "Help & Guide", href: "/help", icon: CircleHelp },
 ]
 

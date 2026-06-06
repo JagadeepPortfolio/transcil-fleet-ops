@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Plus, Bike } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentRole } from "@/lib/auth/role"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -13,11 +14,12 @@ export const metadata = {
 
 export default async function VehiclesAdminPage() {
   const supabase = createClient()
+  const isCmd = (await getCurrentRole()) === "CMD"
 
   const [vehRes, activeRes] = await Promise.all([
     supabase
       .from("vehicles")
-      .select("id, vtd_no, vehicle_id, chassis_no, colour, hub_id, vehicle_types(name), hubs(code, name)")
+      .select("id, vtd_no, vehicle_id, chassis_no, colour, hub_id, created_by_name, vehicle_types(name), hubs(code, name)")
       .is("deleted_at", null)
       .order("vtd_no", { ascending: true }),
     supabase
@@ -48,6 +50,7 @@ export default async function VehiclesAdminPage() {
     chassis_no: string | null
     colour: string | null
     hub_id: number | null
+    created_by_name: string | null
     vehicle_types: { name: string } | null
     hubs: { code: string; name: string } | null
   }>
@@ -60,6 +63,7 @@ export default async function VehiclesAdminPage() {
       vehicle_id: v.vehicle_id,
       chassis_no: v.chassis_no,
       colour: v.colour,
+      created_by_name: v.created_by_name,
       type_name: v.vehicle_types?.name ?? null,
       hub_name: v.hubs ? `${v.hubs.code} — ${v.hubs.name}` : null,
       active_rider: active?.rider_name ?? null,
@@ -75,25 +79,34 @@ export default async function VehiclesAdminPage() {
       <PageHeader
         breadcrumbs={[{ label: "Admin" }, { label: "Vehicles" }]}
         title="Vehicles"
-        description={`CMD only · ${rows.length} total · ${available} available · ${inUse} in use.`}
+        description={`${rows.length} total · ${available} available · ${inUse} in use.`}
         action={
-          <Button render={<Link href="/admin/vehicles/new" />}>
-            <Plus /> New vehicle
-          </Button>
+          isCmd ? (
+            <Button render={<Link href="/admin/vehicles/new" />}>
+              <Plus /> New vehicle
+            </Button>
+          ) : undefined
         }
       />
 
       <VehiclesTable
         rows={rows}
+        canManage={isCmd}
         emptyState={
           <EmptyState
             icon={<Bike />}
             title="No vehicles yet"
-            description="Add the first vehicle. Deployments can only be created against registered VTDs."
+            description={
+              isCmd
+                ? "Add the first vehicle. Deployments can only be created against registered VTDs."
+                : "No vehicles registered yet."
+            }
             action={
-              <Button render={<Link href="/admin/vehicles/new" />}>
-                <Plus /> New vehicle
-              </Button>
+              isCmd ? (
+                <Button render={<Link href="/admin/vehicles/new" />}>
+                  <Plus /> New vehicle
+                </Button>
+              ) : undefined
             }
           />
         }

@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
 import { listVehicleTypes, listHubs } from "@/lib/db/hubs"
+import { getCurrentRole } from "@/lib/auth/role"
 import { vehicleCreateSchema } from "@/lib/validation/vehicle"
 
 import { Button } from "@/components/ui/button"
@@ -86,6 +87,9 @@ export default async function NewVehiclePage({
 }: {
   searchParams: { error?: string }
 }) {
+  // Adding vehicles is CMD-only; staff can view the list but not write.
+  if ((await getCurrentRole()) !== "CMD") redirect("/admin/vehicles")
+
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <PageHeader

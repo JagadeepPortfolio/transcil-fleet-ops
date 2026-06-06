@@ -174,6 +174,7 @@ export default async function DeploymentDetailPage({
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-right">Weeks</TableHead>
                     <TableHead>Txn ID</TableHead>
+                    <TableHead>By</TableHead>
                     <TableHead>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -181,7 +182,7 @@ export default async function DeploymentDetailPage({
                   {log.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="py-8 text-center text-xs text-muted-foreground"
                       >
                         No activity yet. Use the quick actions to record a
@@ -211,6 +212,9 @@ export default async function DeploymentDetailPage({
                         </TableCell>
                         <TableCell className="font-mono text-xs text-muted-foreground">
                           {(e.transaction_id as string) ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {(e.created_by_name as string) ?? "—"}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {(e.notes as string) ?? ""}

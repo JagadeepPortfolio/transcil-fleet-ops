@@ -16,6 +16,7 @@ export type RiderRow = {
   alt_contact_number: string | null
   purpose: string | null
   notes: string | null
+  created_by_name: string | null
   created_at: string
   updated_at: string
 }

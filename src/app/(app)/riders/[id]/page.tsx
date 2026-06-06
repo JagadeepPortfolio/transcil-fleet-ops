@@ -89,6 +89,7 @@ export default async function RiderDetailPage({
           label="Added"
           value={formatDate(rider.created_at)}
         />
+        <InfoCard label="Added by" value={rider.created_by_name ?? "—"} />
         <InfoCard
           label="Photo"
           value={rider.photo_url ?? "Not uploaded"}

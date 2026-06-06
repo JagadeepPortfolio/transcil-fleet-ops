@@ -16,22 +16,30 @@ export type VehicleRow = {
   colour: string | null
   type_name: string | null
   hub_name: string | null
+  created_by_name: string | null
   active_rider: string | null
   active_days_left: number | null
 }
 
-const columns: ColumnDef<VehicleRow>[] = [
+// Columns depend on canManage: only CMD gets an editable (linked) VTD.
+function makeColumns(canManage: boolean): ColumnDef<VehicleRow>[] {
+  return [
   {
     accessorKey: "vtd_no",
     header: "VTD",
-    cell: ({ row }) => (
-      <Link
-        href={`/admin/vehicles/${row.original.id}`}
-        className="font-mono text-xs font-medium hover:underline"
-      >
-        {row.original.vtd_no}
-      </Link>
-    ),
+    cell: ({ row }) =>
+      canManage ? (
+        <Link
+          href={`/admin/vehicles/${row.original.id}`}
+          className="font-mono text-xs font-medium hover:underline"
+        >
+          {row.original.vtd_no}
+        </Link>
+      ) : (
+        <span className="font-mono text-xs font-medium">
+          {row.original.vtd_no}
+        </span>
+      ),
   },
   {
     accessorKey: "vehicle_id",
@@ -71,6 +79,15 @@ const columns: ColumnDef<VehicleRow>[] = [
     ),
   },
   {
+    accessorKey: "created_by_name",
+    header: "Added by",
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground">
+        {row.original.created_by_name ?? "—"}
+      </span>
+    ),
+  },
+  {
     id: "availability",
     header: "Availability",
     cell: ({ row }) => {
@@ -88,7 +105,8 @@ const columns: ColumnDef<VehicleRow>[] = [
       return <Badge variant="success">Available</Badge>
     },
   },
-]
+  ]
+}
 
 type AvailabilityFilter = "all" | "available" | "in_use"
 
@@ -101,12 +119,17 @@ const AVAILABILITY_OPTIONS: { value: AvailabilityFilter; label: string }[] = [
 export function VehiclesTable({
   rows,
   emptyState,
+  canManage = false,
 }: {
   rows: VehicleRow[]
   emptyState?: React.ReactNode
+  /** CMD only — enables links into the edit pages and row click-through. */
+  canManage?: boolean
 }) {
   const [availability, setAvailability] =
     React.useState<AvailabilityFilter>("all")
+
+  const columns = React.useMemo(() => makeColumns(canManage), [canManage])
 
   // Availability is derived: a vehicle with an active rider is "In use",
   // otherwise "Available" (matches the Availability column).
@@ -152,7 +175,7 @@ export function VehiclesTable({
         // Only the true "no vehicles at all" case shows the empty state; a
         // filter that excludes everything falls through to "No rows match".
         emptyState={rows.length === 0 ? emptyState : undefined}
-        getRowHref={(row) => `/admin/vehicles/${row.id}`}
+        getRowHref={canManage ? (row) => `/admin/vehicles/${row.id}` : undefined}
       />
     </div>
   )
