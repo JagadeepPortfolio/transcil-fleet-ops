@@ -11,7 +11,8 @@ import { vehicleCreateSchema } from "@/lib/validation/vehicle"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
 import { Card } from "@/components/ui/card"
-import { Field, FormError } from "@/components/ui/form-fields"
+import { FormError } from "@/components/ui/form-fields"
+import { VehicleEntryFields } from "./vehicle-entry-fields"
 
 // Vehicle type is no longer chosen in the UI; new vehicles default to
 // E-Scooter. Hub is always Nagole (code "NAG").
@@ -110,10 +111,7 @@ export default async function NewVehiclePage({
 
       <Card>
         <form action={createVehicle} className="space-y-5 p-6">
-          <Field label="VTD number" name="vtd_no" required />
-          <Field label="EC No" name="vehicle_id" required />
-          <Field label="Chassis No" name="chassis_no" />
-          <Field label="Colour" name="colour" />
+          <VehicleEntryFields />
           <div className="flex items-center justify-end gap-3 border-t pt-5">
             <Button variant="ghost" render={<Link href="/admin/vehicles" />}>
               Cancel
