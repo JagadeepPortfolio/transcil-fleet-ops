@@ -12,6 +12,12 @@ import { MobileNav } from "@/components/shell/mobile-nav"
  * session cookie and redirects unauthenticated users to /login. This layout
  * is the belt-and-braces check: if a request somehow reaches here without a
  * session (race at the middleware boundary, stale cache), bounce again.
+ *
+ * Perf: middleware already validated the JWT against the auth server (a
+ * network call) on this same request, so here we read the session from the
+ * cookie locally via getSession() — no extra round trip to Supabase.
+ * getUser() would re-hit the auth server; given the middleware gate that's
+ * redundant latency.
  */
 export default async function AppLayout({
   children,
@@ -20,8 +26,9 @@ export default async function AppLayout({
 }) {
   const supabase = createClient()
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
 
   if (!user) {
     redirect("/login")
