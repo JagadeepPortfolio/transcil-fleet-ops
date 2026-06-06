@@ -6,6 +6,7 @@ import { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 export type VehicleRow = {
   id: string
@@ -89,6 +90,14 @@ const columns: ColumnDef<VehicleRow>[] = [
   },
 ]
 
+type AvailabilityFilter = "all" | "available" | "in_use"
+
+const AVAILABILITY_OPTIONS: { value: AvailabilityFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "available", label: "Available" },
+  { value: "in_use", label: "In use" },
+]
+
 export function VehiclesTable({
   rows,
   emptyState,
@@ -96,13 +105,55 @@ export function VehiclesTable({
   rows: VehicleRow[]
   emptyState?: React.ReactNode
 }) {
+  const [availability, setAvailability] =
+    React.useState<AvailabilityFilter>("all")
+
+  // Availability is derived: a vehicle with an active rider is "In use",
+  // otherwise "Available" (matches the Availability column).
+  const filtered = React.useMemo(() => {
+    if (availability === "all") return rows
+    return rows.filter((r) =>
+      availability === "in_use" ? !!r.active_rider : !r.active_rider
+    )
+  }, [rows, availability])
+
   return (
-    <DataTable
-      columns={columns}
-      data={rows}
-      filterPlaceholder="Filter by VTD or EC No…"
-      emptyState={emptyState}
-      getRowHref={(row) => `/admin/vehicles/${row.id}`}
-    />
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">
+          Availability:
+        </span>
+        {AVAILABILITY_OPTIONS.map((opt) => {
+          const active = availability === opt.value
+          const count =
+            opt.value === "all"
+              ? rows.length
+              : rows.filter((r) =>
+                  opt.value === "in_use" ? !!r.active_rider : !r.active_rider
+                ).length
+          return (
+            <Button
+              key={opt.value}
+              size="sm"
+              variant={active ? "default" : "outline"}
+              onClick={() => setAvailability(opt.value)}
+            >
+              {opt.label}
+              <span className="ml-1 tabular-nums opacity-70">{count}</span>
+            </Button>
+          )
+        })}
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={filtered}
+        filterPlaceholder="Filter by VTD or EC No…"
+        // Only the true "no vehicles at all" case shows the empty state; a
+        // filter that excludes everything falls through to "No rows match".
+        emptyState={rows.length === 0 ? emptyState : undefined}
+        getRowHref={(row) => `/admin/vehicles/${row.id}`}
+      />
+    </div>
   )
 }
