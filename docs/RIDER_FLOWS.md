@@ -28,8 +28,8 @@ of "add a row to the Activity Log sheet, then update Deployments."
 
 | # | Event type | Frequency | Required fields | Deployment columns patched | Web UI | Module |
 |---|---|---|---|---|---|---|
-| 1 | **PAYMENT** | Weekly, every active deployment | amount, week #, **txn ID** (required to count toward Total Paid), optional additional txn ID | _none_ — total_paid computed in `deployment_totals` view (only counts `transaction_id IS NOT NULL`) | ✅ Dialog on detail page (S12) | S12 |
-| 2 | **DEPOSIT** | At deployment start (or when collected late) | amount, txn ID | _none_ — deposit_collected computed in view | ✅ Dialog on detail page (S12) | S12 |
+| 1 | **PAYMENT** | First on create; then weekly | amount, week #, **txn ID (now mandatory)**, optional additional txn ID | _none_ — total_paid computed in `deployment_totals` (counts only `transaction_id IS NOT NULL`) | ✅ Captured on create + dialog on detail page | S12 / S17 |
+| 2 | **DEPOSIT** | On create (if new deposit needed) | amount, **txn ID (now mandatory)** | _none_ — deposit_collected computed in view; reduces balance (S17) | ✅ Captured on create + dialog on detail page | S12 / S17 |
 | 3 | **DEPOSIT_REFUND** | On contract close | amount, refund status (Refunded / Carried Forward), txn ID | `deposit_refund_status` | ✅ Dialog on detail page (S12) | S12 |
 | 4 | **REPLACEMENT** | Medium — vehicle swap (damage, breakdown, upgrade) | old VTD, new VTD, reason | `vehicle_id` → new vehicle | ✅ Dialog on detail page (S12) | S12 |
 | 5 | **EXTENSION** | Medium — rider continues after current term | extra weeks | `weeks += extra_weeks` (due_date auto-recalcs via generated column) | ✅ Dialog on detail page (S12) | S12 |
@@ -39,6 +39,12 @@ of "add a row to the Activity Log sheet, then update Deployments."
 | 9 | **UNLOCK** | Low — reverse lock after resolution | notes | `lock_status='Unlocked'` | ✅ Dialog on detail page (S12) | S12 |
 
 Legend: ✅ = write UI shipped | ❌ = schema + helper ready, UI not yet built
+
+### Admin correction event (not one of the original 9)
+
+| # | Event type | Who | Required fields | Deployment columns patched | Web UI | Module |
+|---|---|---|---|---|---|---|
+| 10 | **DEPLOY_DATE_EDIT** | CMD only | new deploy date, **reason** | `deploy_date` → new (due_date auto-recalcs); also shifts the initial PAYMENT/DEPOSIT `event_date` from the old to the new date; old/new stored in `old_value`/`new_value` | ✅ CMD-only dialog on detail page (S17) | S17 |
 
 ---
 
@@ -65,13 +71,16 @@ From the Excel template's HOW-TO sheet:
 ### Payment validation — txn ID gates the money
 
 `deployment_totals` view sums PAYMENT rows only where `transaction_id IS
-NOT NULL`. Staff can log a payment without a txn ID (collecting cash,
-receipt pending, phone dead). The payment shows in the timeline but
-**does not count toward Total Paid** until the txn ID is added.
-
-This is the #1 financial control from the Excel template
+NOT NULL` — the #1 financial control from the Excel template
 (`build_template_v2.py:863`): _"no Txn ID, no validated payment."_ Do
-not change this without explicit sign-off from the CMD.
+not change this DB filter without explicit sign-off from the CMD.
+
+As of S17 (migration 0024) the Txn ID is also **mandatory in the UI** for
+payment & deposit (payment modes are UPI / Mobile App, which always have a
+reference), so entries always carry one and count. The DB filter stays as the
+safeguard. **Balance (S17, migration 0025):** the deposit is part of Total Due,
+so `balance = total_due − rent paid − deposit collected` and `total_paid` shows
+rent + deposit collected.
 
 ### Deposit carry-forward
 

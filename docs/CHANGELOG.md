@@ -163,12 +163,98 @@ session — future agents and developers depend on it for context.
 
 ---
 
+## Session 17 — Post-deployment refinements, perf, audit, deploy (2026-06-06)
+
+**Scope:** Field/flow corrections from real testing, money-model fixes,
+auto-fill from legacy data, audit trail, performance, and first production
+deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
+
+### Vehicles
+
+- **0014** `vehicles.hub_id`; **0017** `vehicles.chassis_no`; **0023**
+  `vehicles.created_by_name`.
+- New Vehicle form: dropped Vehicle Type & Hub selects (default **E-Scooter** +
+  **Nagole/NAG**); relabeled "Vehicle No" → **EC No** everywhere; added Chassis No.
+- **EC-No autofill (0026)**: `vehicle_reference` table (2,585 rows imported from
+  legacy `vehicles1.xlsx`: ec_no → device_id, chassis_no, color). New Vehicle
+  screen is EC-primary; typing EC auto-fills VTD(Device ID)/Chassis/Colour via
+  `GET /api/vehicle-reference`. Manual entry still allowed on no match.
+- **Staff view-access**: Vehicles screen viewable by all roles (read-only);
+  add/edit/delete remain CMD-only (per-page `getCurrentRole()` gate + RLS).
+  Admin layout no longer blanket CMD-only; write pages self-gate.
+- Availability filter (All / Available / In use) + "Added by" column.
+
+### Riders
+
+- **0015** hubs cleanup (NAG/KUK/VJA/VIZ); **0018** source enum →
+  **Individual / 3PL / Camions** (old values mapped to Individual) + alt-contact
+  name/number + purpose; **0019** free-text `current_location` (replaced the
+  Location dropdown); **0023** `riders.created_by_name`.
+- New/detail UI updated for the above; "Added by" shown on detail.
+
+### Deployments
+
+- **0020** `rental_type` enum (Weekly/Monthly); **0021** `deployment_code`
+  (`DEP-<deploy_year>-N`, gap-free trigger, yearly reset) + counter table;
+  **0025** balance/totals fix; **0027** `DEPLOY_DATE_EDIT` event + audit cols.
+- New Deployment: hub defaults to NAG; **Rental type** Weekly (1wk, ₹1799) /
+  Monthly (4wk fixed, ₹6500 shown but stored as ₹1625/wk weekly-equivalent);
+  deposit section reveals on "New deposit needed"; **initial payment + deposit
+  recorded inline on create** via `logActivityEvent`.
+- Rider dropdown excludes riders with an ACTIVE deployment.
+- List: EC No shown under VTD; only the **rider name** is clickable.
+- **Balance/totals (0025)**: `total_paid = rent paid + deposit collected`,
+  `balance = total_due − rent − deposit collected`; pay_status uses the same →
+  rent+deposit fully collected reads **PAID / ₹0**.
+- **Mandatory Txn ID (0024 modes + validation)**: payment & deposit require a
+  Transaction ID (with `*`); DB count-filter retained (invariant #5).
+- **CMD deploy-date edit (0027)**: CMD-only "Edit deploy date" with required
+  reason; recalculates due_date, **shifts the initial payment/deposit dates** to
+  match, logs a `DEPLOY_DATE_EDIT` timeline entry (old → new, by).
+
+### Payments / audit
+
+- **0024**: payment modes → **UPI / Mobile App** (removed Bank Transfer, Cash).
+- **0023 audit**: `created_by_name` snapshot trigger on activity_log/riders/
+  vehicles → "By" on the activity log, "Added by" on riders/vehicles. The
+  initial-payment actor is now recorded (was previously NULL).
+
+### Dashboard / UI / dates
+
+- Dashboard cards: added **Available Vehicles**, renamed Vehicles → **Total
+  Vehicles**, added **Locked vehicles**; removed "Call today"; renamed "At risk
+  today" → **Due Date Crossed** (overdue).
+- All UI dates standardized to **`dd MMM yyyy`** via `src/lib/dates.ts`
+  (`formatDate`). Nav reordered: Dashboard · Riders · Vehicles · Deployments ·
+  Reports. Added shared `(app)/loading.tsx` skeleton for instant nav feedback.
+
+### Performance
+
+- **Region co-location** (`vercel.json` `regions:["bom1"]`): functions now run
+  in Mumbai next to Supabase (was `iad1`/US) — eliminates ~250ms-per-query
+  cross-continent latency. App layout reads session from cookie (`getSession`)
+  instead of a second network `getUser`. Fluid Compute already on.
+
+### Testing helpers (DB functions, service-role only)
+
+- **0022** `reset_test_data()` — truncate deployments/riders/vehicles (+activity
+  via cascade) and reset numbering. `reset_deployment_codes()` — counters only.
+  Both `REVOKE`d from app users; not callable from the app or a Vercel deploy.
+
+### Deploy
+
+- First production deploys via `npx vercel --prod` (manual; no Git auto-deploy).
+  Live at https://transcil-fleet-ops.vercel.app.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
 |---|---|---|
-| 1 | CSV Import from legacy | Discovery (8 questions unanswered) |
-| 2 | Reports page (content TBD) | nothing |
-| 3 | WhatsApp / MSG91 OTP | Phase 2, provider accounts |
-| 4 | Vercel production deploy | env vars in Vercel dashboard |
-| 5 | Rider edit page (update existing rider details) | nothing |
+| 1 | CSV Import from legacy (rider deployments) | Discovery |
+| 2 | Delete deployment (CMD, soft-delete + audit) | deferred by request |
+| 3 | User admin UI (add/role/hub for staff) | nothing |
+| 4 | WhatsApp / MSG91 OTP | Phase 2, provider accounts |
+| 5 | Rider edit page; Edit-vehicle EC autofill | nothing |
+| 6 | GitHub → Vercel auto-deploy (optional) | dashboard connect |

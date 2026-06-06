@@ -8,23 +8,25 @@ replace the legacy mfg/registration app — that one stays.
 
 ---
 
-## Current status (Session 12 — 2026-04-12)
+## Current status (Session 17 — 2026-06-06 · live on Vercel)
 
 | Module | Status |
 |---|---|
-| 1. Rider Profiles | ✅ shipped |
-| 2. Deployments | ✅ shipped (list + create + detail) |
-| 3. Admin → Vehicles (CMD only) | ✅ shipped |
-| 4. PAYMENT / DEPOSIT / DEPOSIT_REFUND / REMINDER_CALL | ✅ shipped (S12 dialogs on detail page) |
-| 5. EXTENSION / RETURN / REPLACEMENT | planned S13 |
-| 6. LOCK / UNLOCK | planned S14 |
-| 7. Dashboard KPI cards | ✅ shipped |
-| 8. Command palette (Cmd+K) | ✅ shipped |
-| 9. Mobile shell (bottom nav) | ✅ shipped |
-| 10. Admin & Settings (full) | deferred |
-| CSV Import from legacy | blocked on Discovery |
+| 1. Rider Profiles | ✅ shipped (source: Individual/3PL/Camions, alt contact, current location) |
+| 2. Deployments | ✅ shipped — rental type, codes (DEP-YYYY-N), inline first payment+deposit |
+| 3. Admin → Vehicles | ✅ shipped — staff view-access, CMD-only writes, EC-No autofill from reference |
+| 4. All 9 rider-flow events (PAYMENT … UNLOCK) | ✅ shipped (detail-page dialogs) |
+| 5. CMD deploy-date edit (audited correction) | ✅ shipped (S17) |
+| 6. Dashboard KPIs + alerts | ✅ shipped (Available/Total/Locked, Due Date Crossed) |
+| 7. Command palette / mobile shell / loading states | ✅ shipped |
+| 8. Reports (outstanding, monthly, hub) | ✅ shipped |
+| 9. Audit "who did it" (created_by_name) | ✅ shipped (S17) |
+| User admin UI / CSV import / delete deployment | planned |
+
+Schema at migration **0027**. Production: https://transcil-fleet-ops.vercel.app
 
 > For agent/AI context, see `CLAUDE.md`.
+> For deep schema/architecture, see `docs/ARCHITECTURE.md`.
 > For rider-flow status, see `docs/RIDER_FLOWS.md`.
 > For the full session log, see `docs/CHANGELOG.md`.
 
@@ -94,6 +96,11 @@ dashboard.
 | `pnpm db:types` | Regenerate `src/lib/db/types.ts` from live schema |
 | `node scripts/seed-dev.mjs` | Seed dev data (5 riders, 3 vehicles, 2 deployments) |
 | `node scripts/smoke-db.mjs` | DB integrity smoke test (6 automated checks) |
+
+**Testing-only DB helpers** (run from the Supabase SQL editor / service role):
+`SELECT reset_test_data();` wipes deployments + riders + vehicles (+ activity via
+cascade) and resets deployment numbering; `SELECT reset_deployment_codes();`
+resets only the `DEP-YYYY-N` counters. Both are revoked from app users.
 
 ---
 
@@ -249,8 +256,11 @@ CLAUDE.md                 # agent/AI orientation — read this for continuity
 
 ## Deployment
 
-Vercel, manual `npx vercel --prod`. Env vars live in Vercel project
-settings, not `.env.local`.
+Vercel, **manual** `npx vercel --prod` (no GitHub auto-deploy — pushing to
+`main` does not deploy). Env vars live in Vercel project settings, not
+`.env.local`. Functions run in a **single Mumbai region (`bom1`)** —
+`vercel.json` — co-located with Supabase for low latency; Fluid Compute on.
+Production: https://transcil-fleet-ops.vercel.app
 
 ---
 

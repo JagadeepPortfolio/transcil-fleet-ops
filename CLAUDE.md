@@ -119,7 +119,7 @@ src/
     forms/               — shared form fragments
 middleware.ts            — refreshes session on every request
 supabase/
-  migrations/0001..0012  — the only source of schema truth
+  migrations/0001..00NN  — the only source of schema truth (0027 at last update)
   seed.sql               — dev fixtures (also runnable via `scripts/seed-dev.mjs`)
 scripts/
   seed-dev.mjs           — seeds riders/vehicles/deployments against remote (idempotent)
@@ -210,6 +210,27 @@ rejects synthetic seed UUIDs (e.g. `20000000-0000-0000-0000-000000000005`).
 Always use the `dbUuid()` helper from `src/lib/validation/helpers.ts`
 for any UUID form field. It validates the 8-4-4-4-12 hex format without
 checking version/variant — the DB enforces the real FK constraint.
+
+### 10. Post-foundation patterns (sessions 17+) — see `docs/ARCHITECTURE.md`
+
+These are load-bearing and easy to break; details in ARCHITECTURE.md:
+
+- **Money/balance (0025):** `total_paid = rent + deposit collected`;
+  `balance = total_due − rent − deposit collected`. `rate_inr` is always ₹/week
+  (Monthly stores the weekly-equivalent ₹1625). Txn ID is **mandatory** on
+  payment & deposit; the `transaction_id IS NOT NULL` count-filter stays (#5).
+- **Audit actor (0023):** `created_by_name` is snapshotted by a SECURITY DEFINER
+  trigger on activity_log/riders/vehicles — never resolve names via app_users
+  join (RLS blocks cross-user reads).
+- **Deployment code (0021):** `DEP-<deploy_year>-N`, trigger-assigned, immutable
+  after creation (editing the date won't renumber it).
+- **`deployments_enriched` uses `d.*`** → adding a deployments column requires
+  **recreating the view** (Postgres freezes the column list). See 0021/0025.
+- **Vehicles screen:** viewable by all roles; add/edit/delete are CMD-only via
+  per-page `getCurrentRole()` (`src/lib/auth/role.ts`) + RLS. The `(app)/admin`
+  layout is no longer blanket CMD-only — new admin pages must self-gate.
+- **Deploy/region:** single Vercel region `bom1` (`vercel.json`) co-located with
+  Supabase; deploy is manual `npx vercel --prod` (no Git auto-deploy).
 
 ---
 
@@ -354,11 +375,22 @@ Two distinct stores — do not confuse them:
 repo.** Anything that's purely "how does this specific user like me to
 respond" stays in personal memory.
 
-When finishing a session, update in this order:
-1. `docs/CHANGELOG.md` — what shipped, what's next
-2. `docs/RIDER_FLOWS.md` — if rider-flow status changed
-3. `README.md` — if setup / scripts / status changed
-4. Personal auto-memory — only for user-preference drift or meta-observations
+### Definition of Done (keep docs from drifting)
+
+A change is not "done" until the docs that travel with it are updated **in the
+same change**:
+
+1. `docs/CHANGELOG.md` — **always** add an entry (what shipped + what's next).
+2. `docs/ARCHITECTURE.md` — when schema, views, enums, or an invariant change.
+3. `docs/data-model.html` — when tables/columns/enums change (visual companion).
+4. `docs/RIDER_FLOWS.md` — when a rider-flow status changes.
+5. `CLAUDE.md` — when an invariant or load-bearing pattern is added/changed.
+6. `README.md` — when setup / scripts / status change.
+7. Personal auto-memory — only for user-preference drift or meta-observations.
+
+Don't batch this for "end of session" — stale docs are how a future agent gets a
+wrong picture. The CHANGELOG once drifted ~14 migrations behind; that's the bar
+not to cross again.
 
 ---
 

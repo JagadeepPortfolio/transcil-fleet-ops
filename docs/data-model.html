@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Transcil Fleet Ops — Data Model & ER Diagram</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1d212b;
+    --border: #2a2f3a;
+    --text: #e6e9ef;
+    --muted: #9aa3b2;
+    --accent: #4ade80;
+    --accent-2: #38bdf8;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --pk: #c084fc;
+    --fk: #38bdf8;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  header {
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #14171e, #0f1115);
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(6px);
+  }
+  header h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.01em; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  nav {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px;
+  }
+  nav a {
+    color: var(--muted); text-decoration: none; font-size: 12.5px;
+    padding: 5px 11px; border: 1px solid var(--border); border-radius: 999px;
+    transition: .15s;
+  }
+  nav a:hover { color: var(--text); border-color: var(--accent); }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 40px 80px; }
+  section { margin-bottom: 48px; scroll-margin-top: 140px; }
+  h2 {
+    font-size: 17px; margin: 0 0 16px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border); letter-spacing: -0.01em;
+  }
+  h2 .tag { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+  h3 { font-size: 14px; margin: 24px 0 8px; }
+  .legend { display:flex; gap:18px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin:0 0 14px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .dot { width:10px;height:10px;border-radius:3px; display:inline-block; }
+  .diagram-wrap {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; overflow-x: auto;
+  }
+  .mermaid { display:flex; justify-content:center; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; margin-bottom: 8px;
+  }
+  caption {
+    text-align: left; font-family: var(--mono); font-size: 13.5px; color: var(--accent);
+    padding: 12px 14px 8px; font-weight: 600;
+  }
+  caption .sub { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 6px; }
+  th, td { text-align: left; padding: 8px 14px; border-top: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  td.col { font-family: var(--mono); white-space: nowrap; }
+  td.type { font-family: var(--mono); color: var(--accent-2); font-size: 12px; white-space: nowrap; }
+  .badge { font-size: 10px; padding: 1px 6px; border-radius: 4px; font-family: var(--mono); margin-left: 6px; }
+  .pk { background: rgba(192,132,252,.15); color: var(--pk); border:1px solid rgba(192,132,252,.3); }
+  .fk { background: rgba(56,189,248,.13); color: var(--fk); border:1px solid rgba(56,189,248,.3); }
+  .uq { background: rgba(74,222,128,.12); color: var(--accent); border:1px solid rgba(74,222,128,.3); }
+  .gen { background: rgba(251,191,36,.12); color: var(--warn); border:1px solid rgba(251,191,36,.3); }
+  .nn { color: var(--muted); font-size: 10px; font-family: var(--mono); }
+  .desc { color: var(--muted); }
+  .enum-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+  .enum-card { background: var(--panel); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+  .enum-card h4 { margin:0 0 6px; font-family:var(--mono); font-size:13px; color:var(--accent); }
+  .enum-card code { background: var(--panel-2); padding:1px 6px; border-radius:4px; font-size:11.5px; margin:2px 3px 2px 0; display:inline-block; color:var(--text); }
+  .gap { background: var(--panel); border:1px solid var(--border); border-left:3px solid var(--warn); border-radius:8px; padding:14px 16px; margin-bottom:12px; }
+  .gap.high { border-left-color: var(--danger); }
+  .gap.info { border-left-color: var(--accent-2); }
+  .gap h4 { margin:0 0 6px; font-size:13.5px; display:flex; align-items:center; gap:8px; }
+  .gap .sev { font-size:10px; padding:2px 7px; border-radius:999px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.04em; }
+  .sev.review { background: rgba(251,191,36,.15); color:var(--warn); }
+  .sev.watch  { background: rgba(248,113,113,.15); color:var(--danger); }
+  .sev.note   { background: rgba(56,189,248,.15); color:var(--accent-2); }
+  .gap p { margin:0; font-size:13px; color:var(--text); }
+  .gap p + p { margin-top:6px; }
+  .gap code, p code, li code, td code { font-family:var(--mono); background:var(--panel-2); padding:1px 5px; border-radius:4px; font-size:12px; }
+  .boundary { display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; }
+  .boundary .box { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px 18px; }
+  .boundary .box.legacy { border-color:#3a3340; }
+  .boundary .box.ours { border-color: rgba(74,222,128,.35); }
+  .boundary .box h4 { margin:0 0 8px; font-size:13px; }
+  .boundary .box ul { margin:0; padding-left:18px; font-size:12.5px; color:var(--muted); }
+  .boundary .arrow { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 18px; color:var(--accent); font-size:12px; }
+  .boundary .arrow .big { font-size:26px; line-height:1; }
+  .note { font-size:12.5px; color:var(--muted); margin-top:8px; }
+  ul.tight { margin:6px 0; padding-left:20px; font-size:13px; }
+  ul.tight li { margin:3px 0; }
+  @media (max-width: 760px){ .boundary{grid-template-columns:1fr;} main{padding:24px 18px 60px;} header{padding:20px;} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Transcil Fleet Ops — Data Model &amp; Entity Relationships</h1>
+  <p>Source of truth: <code>supabase/migrations/0001–0027</code> &nbsp;·&nbsp; refreshed 2026-06-06 (session 17) &nbsp;·&nbsp; see also <code>docs/ARCHITECTURE.md</code> &nbsp;·&nbsp; <span id="ts"></span></p>
+  <nav>
+    <a href="#boundary">Legacy boundary</a>
+    <a href="#er">ER diagram</a>
+    <a href="#tables">Tables</a>
+    <a href="#views">Views</a>
+    <a href="#enums">Enums</a>
+    <a href="#gaps">Gap analysis</a>
+  </nav>
+</header>
+
+<main>
+
+<!-- ============ BOUNDARY ============ -->
+<section id="boundary">
+  <h2>System boundary <span class="tag">what this DB owns vs. what legacy owns</span></h2>
+  <div class="boundary">
+    <div class="box legacy">
+      <h4>🏭 Transcil Legacy App <span class="nn">(third-party SaaS · vendor V2407001)</span></h4>
+      <ul>
+        <li>Manufacturing, parts, hubs config</li>
+        <li>Vehicle assignment &amp; initial transaction</li>
+        <li>Agreement printing</li>
+        <li>Geolocation, tracking, service tickets</li>
+      </ul>
+    </div>
+    <div class="arrow">
+      <span class="big">⇒</span>
+      <span>one-way CSV</span>
+      <span class="nn">8 fields, no write-back</span>
+    </div>
+    <div class="box ours">
+      <h4>⚡ Transcil Fleet Ops <span class="nn">(this DB)</span></h4>
+      <ul>
+        <li>Rider profiles &amp; lifecycle</li>
+        <li>Deployments (canonical contract state)</li>
+        <li>Payments, deposits, returns, replacements</li>
+        <li>Reminder calls, lock/unlock, dashboard</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note">CSV import contract: Rider ID, Vehicle No, Hub, Agreement Date, Initial Txn No, Initial Amount, Rental Type, optional Mobile Booking ID. The DB columns that receive this (<code>riders.legacy_rider_id</code>, <code>vehicles.vtd_no</code>, etc.) exist, but the import pipeline itself is <strong>not yet built</strong>.</p>
+</section>
+
+<!-- ============ ER DIAGRAM ============ -->
+<section id="er">
+  <h2>Entity-relationship diagram</h2>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--pk)"></i> PK</span>
+    <span><i class="dot" style="background:var(--fk)"></i> FK</span>
+    <span><i class="dot" style="background:var(--accent)"></i> UNIQUE</span>
+    <span><i class="dot" style="background:var(--warn)"></i> generated / partial-unique</span>
+    <span>||——o{ &nbsp;one-to-many</span>
+  </div>
+  <div class="diagram-wrap">
+    <pre class="mermaid">
+erDiagram
+    auth_users  ||--o| app_users   : "extends"
+    auth_users  ||--o{ riders      : "created_by"
+    locations   ||--o{ hubs        : "in"
+    locations   ||--o{ riders      : "lives in"
+    hubs        ||--o{ deployments : "at"
+    hubs        ||--o{ vehicles    : "stationed (0014)"
+    hubs        ||--o{ app_users   : "scoped to"
+    vehicle_types ||--o{ vehicles  : "is a"
+    riders      ||--o{ deployments : "rents"
+    vehicles    ||--o{ deployments : "assigned"
+    deployments ||--o{ activity_log: "audit trail"
+    vehicles    ||--o{ activity_log: "old/new on REPLACEMENT"
+
+    riders {
+        uuid id PK
+        text legacy_rider_id UK "CSV import"
+        text app_rider_id "mobile app (0013)"
+        text name
+        citext phone UK "10-digit"
+        int  location_id FK
+        rider_source source
+        timestamptz deleted_at "soft delete"
+    }
+
+    vehicles {
+        uuid id PK
+        text vtd_no UK "tracking device serial"
+        text vehicle_id "manual serial"
+        int  vehicle_type_id FK
+        int  hub_id FK "added 0014"
+        timestamptz deleted_at
+    }
+
+    deployments {
+        uuid id PK
+        uuid rider_id FK "1 ACTIVE per rider"
+        uuid vehicle_id FK "1 ACTIVE per vehicle"
+        int  hub_id FK
+        date deploy_date
+        int  weeks "1..52"
+        numeric rate_inr
+        numeric deposit_required_inr
+        deployment_status status
+        date due_date "GENERATED deploy+weeks*7"
+        lock_status lock_status
+        timestamptz deleted_at
+    }
+
+    activity_log {
+        uuid id PK
+        uuid deployment_id FK "ON DELETE CASCADE"
+        activity_event_type event_type
+        date event_date
+        numeric amount_inr
+        text transaction_id "gates Total Paid"
+        text payment_mode "UPI/Bank/Cash (0016)"
+        uuid old_vehicle_id FK
+        uuid new_vehicle_id FK
+        int  week_number
+        int  extra_weeks
+        timestamptz deleted_at
+    }
+
+    hubs {
+        int  id PK
+        text code UK
+        text name
+        int  location_id FK
+        timestamptz deleted_at "added 0015"
+    }
+
+    vehicle_types { int id PK
+        text name UK }
+
+    locations { int id PK
+        text name UK }
+
+    app_users {
+        uuid id PK "= auth.users.id"
+        text full_name
+        app_role role
+        int  hub_id FK "nullable since 0012"
+    }
+    </pre>
+  </div>
+  <p class="note">Auth columns <code>created_by</code> / <code>updated_by</code> on every core table FK to <code>auth.users</code> (Supabase managed) — drawn only for <code>riders</code> to keep the diagram readable; the pattern repeats on <code>vehicles</code>, <code>deployments</code>, <code>activity_log</code>.</p>
+</section>
+
+<!-- ============ TABLES ============ -->
+<section id="tables">
+  <h2>Table-by-table <span class="tag">core + reference</span></h2>
+
+  <table>
+    <caption>riders <span class="sub">rider profiles — source of truth for the person</span></caption>
+    <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="col">id <span class="badge pk">PK</span></td><td class="type">uuid</td><td class="desc">gen_random_uuid()</td></tr>
+      <tr><td class="col">legacy_rider_id <span class="badge uq">UQ</span></td><td class="type">text</td><td class="desc">nullable; filled by CSV import from legacy</td></tr>
+      <tr><td class="col">app_rider_id</td><td class="type">text</td><td class="desc">mobile-app ID (0013); relevant when source='App'</td></tr>
+      <tr><td class="col">name <span class="nn">NOT NULL</span></td><td class="type">text</td><td></td></tr>
+      <tr><td class="col">phone <span class="badge uq">UQ</span></td><td class="type">citext</td><td class="desc">CHECK <code>^[0-9]{10}$</code>, case-insensitive</td></tr>
+      <tr><td class="col">address / notes</td><td class="type">text</td><td></td></tr>
+      <tr><td class="col">id_proof_url / photo_url</td><td class="type">text</td><td class="desc">Supabase Storage paths (private buckets)</td></tr>
+      <tr><td class="col">source</td><td class="type">rider_source</td><td></td></tr>
+      <tr><td class="col">location_id <span class="badge fk">FK</span></td><td class="type">int</td><td class="desc">→ locations(id)</td></tr>
+      <tr><td class="col">created_by / updated_by <span class="badge fk">FK</span></td><td class="type">uuid</td><td class="desc">→ auth.users(id)</td></tr>
+      <tr><td class="col">deleted_at</td><td class="type">timestamptz</td><td class="desc">soft delete</td></tr>
+    </tbody>
+  </table>
+
+  <table>
+    <caption>vehicles <span class="sub">EV inventory — no status column by design (availability is derived)</span></caption>
+    <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="col">id <span class="badge pk">PK</span></td><td class="type">uuid</td><td></td></tr>
+      <tr><td class="col">vtd_no <span class="badge uq">UQ</span> <span class="nn">NOT NULL</span></td><td class="type">text</td><td class="desc">Vehicle Tracking Device serial</td></tr>
+      <tr><td class="col">vehicle_id</td><td class="type">text</td><td class="desc">manual serial (optional)</td></tr>
+      <tr><td class="col">vehicle_type_id <span class="badge fk">FK</span> <span class="nn">NOT NULL</span></td><td class="type">int</td><td class="desc">→ vehicle_types(id)</td></tr>
+      <tr><td class="col">hub_id <span class="badge fk">FK</span></td><td class="type">int</td><td class="desc">→ hubs(id); added 0014, <strong>nullable</strong></td></tr>
+      <tr><td class="col">colour</td><td class="type">text</td><td></td></tr>
+      <tr><td class="col">created_by/updated_by/deleted_at</td><td class="type">—</td><td class="desc">standard audit set</td></tr>
+    </tbody>
+  </table>
+
+  <table>
+    <caption>deployments <span class="sub">canonical contract state — the spine of the app</span></caption>
+    <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="col">id <span class="badge pk">PK</span></td><td class="type">uuid</td><td></td></tr>
+      <tr><td class="col">rider_id <span class="badge fk">FK</span> <span class="nn">NOT NULL</span></td><td class="type">uuid</td><td class="desc">→ riders · ON DELETE RESTRICT · <span class="badge uq">≤1 ACTIVE/rider</span></td></tr>
+      <tr><td class="col">vehicle_id <span class="badge fk">FK</span> <span class="nn">NOT NULL</span></td><td class="type">uuid</td><td class="desc">→ vehicles · ON DELETE RESTRICT · <span class="badge uq">≤1 ACTIVE/vehicle</span></td></tr>
+      <tr><td class="col">hub_id <span class="badge fk">FK</span> <span class="nn">NOT NULL</span></td><td class="type">int</td><td class="desc">→ hubs(id)</td></tr>
+      <tr><td class="col">deploy_date <span class="nn">NOT NULL</span></td><td class="type">date</td><td></td></tr>
+      <tr><td class="col">weeks <span class="nn">NOT NULL</span></td><td class="type">int</td><td class="desc">CHECK 1..52</td></tr>
+      <tr><td class="col">rate_inr <span class="nn">NOT NULL</span></td><td class="type">numeric(10,2)</td><td class="desc">≥ 0</td></tr>
+      <tr><td class="col">deposit_required_inr</td><td class="type">numeric(10,2)</td><td class="desc">deposit <em>contract</em>, not cash</td></tr>
+      <tr><td class="col">new_deposit_needed</td><td class="type">boolean</td><td class="desc">default true</td></tr>
+      <tr><td class="col">deposit_refund_status</td><td class="type">deposit_refund_status</td><td></td></tr>
+      <tr><td class="col">status</td><td class="type">deployment_status</td><td class="desc">ACTIVE / RETURNED / LOCKED / CANCELLED</td></tr>
+      <tr><td class="col">call_status / call_notes</td><td class="type">call_status / text</td><td></td></tr>
+      <tr><td class="col">lock_date / lock_status</td><td class="type">date / lock_status</td><td></td></tr>
+      <tr><td class="col">return_date / return_reason</td><td class="type">date / text</td><td></td></tr>
+      <tr><td class="col">due_date <span class="badge gen">GEN</span></td><td class="type">date</td><td class="desc">GENERATED ALWAYS AS <code>deploy_date + weeks*7</code> STORED</td></tr>
+    </tbody>
+  </table>
+
+  <table>
+    <caption>activity_log <span class="sub">append-only audit trail — write only via <code>logActivityEvent()</code></span></caption>
+    <thead><tr><th>Column</th><th>Type</th><th>Used by event</th></tr></thead>
+    <tbody>
+      <tr><td class="col">id <span class="badge pk">PK</span></td><td class="type">uuid</td><td></td></tr>
+      <tr><td class="col">deployment_id <span class="badge fk">FK</span> <span class="nn">NOT NULL</span></td><td class="type">uuid</td><td class="desc">→ deployments · <strong>ON DELETE CASCADE</strong></td></tr>
+      <tr><td class="col">event_type <span class="nn">NOT NULL</span></td><td class="type">activity_event_type</td><td class="desc">9 types</td></tr>
+      <tr><td class="col">event_date <span class="nn">NOT NULL</span></td><td class="type">date</td><td class="desc">all</td></tr>
+      <tr><td class="col">amount_inr</td><td class="type">numeric(10,2)</td><td class="desc">PAYMENT, DEPOSIT, DEPOSIT_REFUND</td></tr>
+      <tr><td class="col">transaction_id</td><td class="type">text</td><td class="desc">gates Total Paid (no CHECK — nullable by design)</td></tr>
+      <tr><td class="col">additional_transaction_id</td><td class="type">text</td><td></td></tr>
+      <tr><td class="col">payment_mode</td><td class="type">text</td><td class="desc">CHECK UPI/Bank Transfer/Cash (0016)</td></tr>
+      <tr><td class="col">week_number</td><td class="type">int</td><td class="desc">PAYMENT</td></tr>
+      <tr><td class="col">old_vehicle_id / new_vehicle_id <span class="badge fk">FK</span></td><td class="type">uuid</td><td class="desc">REPLACEMENT → vehicles</td></tr>
+      <tr><td class="col">old_vtd / new_vtd</td><td class="type">text</td><td class="desc">REPLACEMENT (cached VTD strings)</td></tr>
+      <tr><td class="col">reason</td><td class="type">text</td><td class="desc">RETURN, REPLACEMENT</td></tr>
+      <tr><td class="col">extra_weeks</td><td class="type">int</td><td class="desc">EXTENSION (CHECK &gt; 0)</td></tr>
+      <tr><td class="col">call_outcome</td><td class="type">text</td><td class="desc">REMINDER_CALL</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Reference tables</h3>
+  <table>
+    <caption>locations <span class="sub">22 cities</span> · hubs <span class="sub">4 active + 6 retired</span> · vehicle_types <span class="sub">5</span> · app_users <span class="sub">role + hub scoping</span></caption>
+    <thead><tr><th>Table</th><th>Key columns</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td class="col">locations</td><td class="type">id PK, name UQ</td><td class="desc">Telangana cities + Vijayawada/Vizag (0015)</td></tr>
+      <tr><td class="col">hubs</td><td class="type">id PK, code UQ, location_id FK, deleted_at</td><td class="desc">NAG/KUK/VJA/VIZ active; HYD/SEC/CYB/WGL/KAR/NZB soft-deleted as <code>[retired]</code></td></tr>
+      <tr><td class="col">vehicle_types</td><td class="type">id PK, name UQ</td><td class="desc">E-Bike Standard/Pro, E-Scooter, Cargo E-Bike/E-Trike</td></tr>
+      <tr><td class="col">app_users</td><td class="type">id PK = auth.users.id, role, hub_id FK</td><td class="desc"><code>role_hub_check</code> dropped in 0012; RLS handles un-hubbed staff. Auto-created by <code>handle_new_user()</code> trigger.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ VIEWS ============ -->
+<section id="views">
+  <h2>Views <span class="tag">read models the UI consumes</span></h2>
+  <table>
+    <caption>deployment_totals <span class="sub">per-deployment money aggregates · no TODAY() dependency</span></caption>
+    <thead><tr><th>Derived column</th><th>Formula</th></tr></thead>
+    <tbody>
+      <tr><td class="col">total_due</td><td class="desc"><code>weeks*rate_inr + (new_deposit_needed ? deposit_required_inr : 0)</code> · rate_inr is always ₹/week (Monthly stores ₹1625 weekly-equivalent)</td></tr>
+      <tr><td class="col">total_paid (rent only)</td><td class="desc">Σ PAYMENT.amount_inr <strong>where transaction_id IS NOT NULL</strong> · Txn ID mandatory in UI (0024)</td></tr>
+      <tr><td class="col">deposit_collected / refunded / net</td><td class="desc">Σ DEPOSIT − Σ DEPOSIT_REFUND (also txn-gated)</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <caption>deployments_enriched <span class="sub">deployments + rider/vehicle/hub joins + computed status — IST-aware</span></caption>
+    <thead><tr><th>Derived column</th><th>Logic</th></tr></thead>
+    <tbody>
+      <tr><td class="col">total_paid (displayed)</td><td class="desc"><strong>rent paid + deposit collected</strong> (0025)</td></tr>
+      <tr><td class="col">balance</td><td class="desc"><strong>total_due − rent paid − deposit collected</strong> (0025) → 0 when rent+deposit fully collected</td></tr>
+      <tr><td class="col">pay_status</td><td class="desc">PAID / PARTIAL / OVERDUE / PENDING — uses the combined paid figure (OVERDUE uses <code>(CURRENT_DATE AT TIME ZONE 'Asia/Kolkata')</code>)</td></tr>
+      <tr><td class="col">days_left</td><td class="desc">due_date − today(IST)</td></tr>
+      <tr><td class="col">action</td><td class="desc">LOCK_NOW / AT_RISK / CALL_TODAY / UPCOMING / OK — <strong>NULL when status ≠ ACTIVE</strong></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ ENUMS ============ -->
+<section id="enums">
+  <h2>Enums <span class="tag">domain state machines</span></h2>
+  <div class="enum-grid">
+    <div class="enum-card"><h4>deployment_status</h4><code>ACTIVE</code><code>RETURNED</code><code>LOCKED</code><code>CANCELLED</code></div>
+    <div class="enum-card"><h4>activity_event_type</h4><code>PAYMENT</code><code>DEPOSIT</code><code>DEPOSIT_REFUND</code><code>REPLACEMENT</code><code>EXTENSION</code><code>RETURN</code><code>REMINDER_CALL</code><code>LOCK</code><code>UNLOCK</code><code>DEPLOY_DATE_EDIT</code></div>
+    <div class="enum-card"><h4>pay_status</h4><code>PAID</code><code>PARTIAL</code><code>OVERDUE</code><code>PENDING</code></div>
+    <div class="enum-card"><h4>action_priority</h4><code>LOCK_NOW</code><code>AT_RISK</code><code>CALL_TODAY</code><code>UPCOMING</code><code>OK</code></div>
+    <div class="enum-card"><h4>lock_status</h4><code>Not Locked</code><code>Locked</code><code>Unlocked</code></div>
+    <div class="enum-card"><h4>call_status</h4><code>Pending</code><code>Called-Will Return</code><code>Called-Extending</code><code>Called-No Response</code><code>Not Required</code></div>
+    <div class="enum-card"><h4>deposit_refund_status</h4><code>Pending</code><code>Refunded</code><code>Carried Forward</code></div>
+    <div class="enum-card"><h4>rider_source <span class="sub">(0018)</span></h4><code>Individual</code><code>3PL</code><code>Camions</code></div>
+    <div class="enum-card"><h4>rental_type <span class="sub">(0020)</span></h4><code>Weekly</code><code>Monthly</code></div>
+    <div class="enum-card"><h4>payment_mode <span class="sub">(CHECK, 0024)</span></h4><code>UPI</code><code>Mobile App</code></div>
+    <div class="enum-card"><h4>app_role</h4><code>CMD</code><code>HUB_MANAGER</code><code>FIELD_STAFF</code></div>
+  </div>
+</section>
+
+<!-- ============ SESSION 17 ADDITIONS ============ -->
+<section id="additions">
+  <h2>Schema additions since foundation <span class="tag">migrations 0014–0027</span></h2>
+  <table>
+    <caption>New tables</caption>
+    <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td class="col">vehicle_reference (0026)</td><td class="desc">Read-only legacy catalog (~2,585 rows): <code>ec_no</code> PK → <code>device_id</code>, <code>chassis_no</code>, <code>color</code>. Powers EC-No autofill on New Vehicle.</td></tr>
+      <tr><td class="col">deployment_code_counters (0021)</td><td class="desc"><code>year</code> PK, <code>last_seq</code> — per-year sequence for <code>deployment_code</code> (DEP-YYYY-N).</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <caption>New columns on existing tables</caption>
+    <thead><tr><th>Table</th><th>Columns</th></tr></thead>
+    <tbody>
+      <tr><td class="col">riders</td><td class="desc"><code>app_rider_id</code> (0013), <code>current_location</code> (0019), <code>alt_contact_name/alt_contact_number/purpose</code> (0018), <code>created_by_name</code> (0023)</td></tr>
+      <tr><td class="col">vehicles</td><td class="desc"><code>hub_id</code> (0014), <code>chassis_no</code> (0017), <code>created_by_name</code> (0023)</td></tr>
+      <tr><td class="col">deployments</td><td class="desc"><code>rental_type</code> (0020), <code>deployment_code</code> (0021, immutable)</td></tr>
+      <tr><td class="col">activity_log</td><td class="desc"><code>payment_mode</code> (0016/0024), <code>old_value/new_value</code> (0027), <code>created_by_name</code> (0023)</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <caption>Triggers & helpers</caption>
+    <thead><tr><th>Object</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td class="col">assign_deployment_code() (0021)</td><td class="desc">BEFORE INSERT on deployments → DEP-&lt;deploy_year&gt;-N, gap-free, yearly reset.</td></tr>
+      <tr><td class="col">set_created_by_audit() (0023)</td><td class="desc">BEFORE INSERT on activity_log/riders/vehicles → snapshot actor name (SECURITY DEFINER).</td></tr>
+      <tr><td class="col">reset_test_data() / reset_deployment_codes() (0022)</td><td class="desc">Testing-only wipes; REVOKEd from app users.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ GAPS ============ -->
+<section id="gaps">
+  <h2>Gap analysis <span class="tag">observations to review — not assertions of bugs</span></h2>
+
+  <div class="gap high">
+    <h4><span class="sev watch">watch</span> Hub referential drift: vehicle hub vs. deployment hub</h4>
+    <p>Both <code>vehicles.hub_id</code> (0014) and <code>deployments.hub_id</code> exist independently, with <strong>no constraint tying them together</strong>. A deployment can record a hub different from where its vehicle is stationed. Decide which is authoritative, or add a check / default <code>deployments.hub_id</code> from the vehicle.</p>
+  </div>
+
+  <div class="gap high">
+    <h4><span class="sev watch">watch</span> Retired hubs are soft-deleted but still FK-referenced</h4>
+    <p>0015 marks HYD/SEC/etc. <code>deleted_at</code> but they remain valid FK targets for existing <code>deployments</code>/<code>vehicles</code> (no cascade, by intent). <code>deployments_enriched</code> joins <code>hubs</code> <strong>without</strong> a <code>deleted_at IS NULL</code> filter, so retired hub names still render — fine for history, but any "list active hubs" dropdown must filter <code>deleted_at IS NULL</code> or staff can deploy to a dead hub. Worth confirming the new-deployment form does this.</p>
+  </div>
+
+  <div class="gap">
+    <h4><span class="sev review">review</span> No DB enforcement that <code>app_users.hub_id</code> is set for non-CMD</h4>
+    <p>The <code>role_hub_check</code> constraint was dropped in 0012 (it fought the signup trigger). The invariant "field staff must have a hub" now lives only in RLS + app logic. An un-hubbed <code>FIELD_STAFF</code> is harmless (RLS filters them to nothing) but also <strong>invisible/non-functional</strong> until an admin assigns a hub — and the admin UI to do that (Module 9) isn't built yet. Operational gap, not a schema bug.</p>
+  </div>
+
+  <div class="gap">
+    <h4><span class="sev review">review</span> <code>payment_mode</code> is loosely coupled to event type</h4>
+    <p>0016 adds <code>payment_mode</code> with a value CHECK but <strong>no link to <code>event_type</code></strong> — it can be set on a LOCK or RETURN row, or left NULL on a PAYMENT. If you need clean payment-mode reporting, consider it NOT NULL for money events (enforced in <code>logActivityEvent()</code> or a CHECK).</p>
+  </div>
+
+  <div class="gap">
+    <h4><span class="sev review">review</span> Deposit cash vs. deposit contract can diverge silently</h4>
+    <p><code>deployments.deposit_required_inr</code> + <code>new_deposit_needed</code> describe the <em>contract</em>; actual cash is the sum of DEPOSIT/DEPOSIT_REFUND rows in <code>activity_log</code>. Nothing reconciles the two — a deployment can require ₹X deposit with ₹0 ever collected and no flag. The dashboard may want a "deposit shortfall" signal.</p>
+  </div>
+
+  <div class="gap">
+    <h4><span class="sev review">review</span> <code>week_number</code> / <code>extra_weeks</code> not validated against the contract</h4>
+    <p>A PAYMENT can carry any <code>week_number</code> (e.g. week 99 on a 4-week deployment); EXTENSION's <code>extra_weeks</code> only checks <code>&gt; 0</code>, not an upper bound that keeps <code>weeks ≤ 52</code>. The <code>weeks BETWEEN 1 AND 52</code> CHECK lives on <code>deployments</code>, so a large extension that bumps <code>weeks</code> past 52 would fail at update time — verify <code>logActivityEvent()</code> surfaces that cleanly.</p>
+  </div>
+
+  <div class="gap info">
+    <h4><span class="sev note">note</span> Two external ID systems on riders, neither required</h4>
+    <p><code>legacy_rider_id</code> (CSV) and <code>app_rider_id</code> (mobile) are both nullable text with no overlap rule. Fine today, but if the CSV import lands, confirm whether a rider can/should have both and which one search keys off.</p>
+  </div>
+
+  <div class="gap info">
+    <h4><span class="sev note">note</span> Replacement event mutates <code>deployments.vehicle_id</code> — uniqueness window</h4>
+    <p>REPLACEMENT swaps <code>vehicle_id</code> on the live ACTIVE deployment. The <code>deployments_active_vehicle_uniq</code> partial index guards against double-assigning the <em>new</em> vehicle, but the <em>old</em> vehicle becomes available the instant the row updates. Confirm <code>logActivityEvent()</code> does the swap in one transaction so there's no window where both vehicles look occupied (or neither).</p>
+  </div>
+
+  <div class="gap info">
+    <h4><span class="sev note">note</span> Soft-delete columns exist everywhere; no delete UI exists yet</h4>
+    <p>Every core table has <code>deleted_at</code> and all query helpers filter it, but there is <strong>no</strong> Server Action that sets it. Deletes are currently impossible from the UI — intended for now, but flagged so it's a conscious gap, not an oversight.</p>
+  </div>
+
+  <div class="gap info">
+    <h4><span class="sev note">note</span> <code>created_by</code>/<code>updated_by</code> point at <code>auth.users</code>, not <code>app_users</code></h4>
+    <p>Audit columns reference the Supabase auth table directly. To show "edited by &lt;name, role, hub&gt;" you must join through <code>app_users</code> separately — no single FK gives you the app-level actor. Minor, but relevant if you build an audit/history screen.</p>
+  </div>
+</section>
+
+</main>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "dark",
+    themeVariables: {
+      primaryColor: "#1d212b",
+      primaryBorderColor: "#2a2f3a",
+      lineColor: "#4ade80",
+      primaryTextColor: "#e6e9ef",
+      fontSize: "13px"
+    },
+    er: { useMaxWidth: false }
+  });
+  document.getElementById("ts").textContent =
+    "rendered " + new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>
