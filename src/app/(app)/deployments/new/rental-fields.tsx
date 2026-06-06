@@ -174,6 +174,7 @@ export function RentalFields({ today }: { today: string }) {
           <Field
             label="Transaction ID (UTR)"
             name="payment_txn_id"
+            required
             hint="UPI / app reference number."
           />
         </div>
@@ -214,6 +215,7 @@ export function RentalFields({ today }: { today: string }) {
               <Field
                 label="Transaction ID (UTR)"
                 name="deposit_txn_id"
+                required
                 hint="UPI / app reference number."
               />
             </div>

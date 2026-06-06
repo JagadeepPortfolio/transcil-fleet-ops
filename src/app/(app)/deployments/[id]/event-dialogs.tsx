@@ -285,6 +285,7 @@ function PaymentDialog({
           <Field
             label="Transaction ID (UTR)"
             name="transaction_id"
+            required
             hint="UPI / app reference number"
           />
         </div>
@@ -362,7 +363,8 @@ function DepositDialog({
         <Field
           label="Transaction ID (UTR)"
           name="transaction_id"
-          hint="UPI ref, receipt no, bank ref…"
+          required
+          hint="UPI / app reference number"
         />
         <TextareaField label="Notes" name="notes" rows={2} />
         <div className="flex items-center justify-end gap-2 pt-2">

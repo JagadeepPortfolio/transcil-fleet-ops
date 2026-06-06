@@ -169,11 +169,21 @@ See `deployments_enriched` in migration 0007 for the pattern.
 
 ### 5. Payment validation — txn ID gates the money
 
-`deployment_totals` only sums PAYMENT rows where
-`transaction_id IS NOT NULL`. Staff may log a payment without a txn ID
-(still collecting it), but it does **not** count toward Total Paid until
-the ID lands. Mirrors the v2.4 Excel template audit safeguard. Do not
-"fix" this by removing the `IS NOT NULL` filter.
+`deployment_totals` only sums PAYMENT/DEPOSIT rows where
+`transaction_id IS NOT NULL` (the "verified to count" rule, mirroring the
+v2.4 Excel template audit safeguard). Do not "fix" this by removing the
+`IS NOT NULL` filter.
+
+As of migration 0024+ the txn ID is **mandatory in the UI** for payment &
+deposit (`paymentSchema`/`depositSchema` in
+`src/lib/validation/activity.ts`), so every entry carries a reference and
+counts — the DB filter is retained as the safeguard.
+
+Balance/Total Paid (migration 0025): `total_due = rent + deposit_required`;
+`deployments_enriched` exposes `total_paid = rent paid + deposit collected`
+and `balance = total_due − total_paid − deposit_collected`, so a deployment
+with rent + deposit fully collected reads PAID / ₹0. `deployment_totals`
+still keeps rent and deposit separate — the fold happens only in the view.
 
 ### 6. Migrations are the only source of schema truth
 

@@ -46,6 +46,12 @@ const optionalText = (max: number) =>
     .or(z.literal(""))
     .transform((v) => (v ? v : undefined))
 
+const requiredTxnId = z
+  .string()
+  .trim()
+  .min(1, "Transaction ID is required")
+  .max(60)
+
 export const paymentSchema = z.object({
   event_date: dateSchema,
   amount_inr: moneySchema,
@@ -57,7 +63,7 @@ export const paymentSchema = z.object({
     .max(52, "Week must be 1–52")
     .optional()
     .or(z.literal("").transform(() => undefined)),
-  transaction_id: optionalText(60),
+  transaction_id: requiredTxnId,
   additional_transaction_id: optionalText(60),
   notes: notesSchema,
 })
@@ -67,7 +73,7 @@ export const depositSchema = z.object({
   event_date: dateSchema,
   amount_inr: moneySchema,
   payment_mode: z.enum(PAYMENT_MODES, { message: "Pick a payment mode" }),
-  transaction_id: optionalText(60),
+  transaction_id: requiredTxnId,
   notes: notesSchema,
 })
 export type DepositInput = z.infer<typeof depositSchema>
