@@ -17,6 +17,10 @@ import { createClient } from "@/lib/supabase/server"
  *   REMINDER_CALL    call_status, call_notes
  *   LOCK             lock_status='Locked', lock_date
  *   UNLOCK           lock_status='Unlocked'
+ *   DEPLOY_DATE_EDIT deploy_date → newDate (due_date auto via GENERATED col);
+ *                    old/new dates + reason stored on the activity_log row;
+ *                    also shifts the initial PAYMENT/DEPOSIT rows dated on the
+ *                    old deploy_date onto the new date
  *
  * Writes happen through logActivityEvent() only. Do NOT `insert into
  * activity_log` from a component or Server Action directly.
@@ -81,6 +85,14 @@ export type ActivityEventInput =
     }
   | { type: "LOCK"; eventDate: string; notes?: string }
   | { type: "UNLOCK"; eventDate: string; notes?: string }
+  | {
+      type: "DEPLOY_DATE_EDIT"
+      eventDate: string
+      oldDate: string
+      newDate: string
+      reason: string
+      notes?: string
+    }
 
 export async function logActivityEvent(
   deploymentId: string,
@@ -130,6 +142,11 @@ export async function logActivityEvent(
     case "REMINDER_CALL":
       insertPayload.call_outcome = event.callOutcome
       break
+    case "DEPLOY_DATE_EDIT":
+      insertPayload.old_value = event.oldDate
+      insertPayload.new_value = event.newDate
+      insertPayload.reason = event.reason
+      break
     case "LOCK":
     case "UNLOCK":
       break
@@ -176,6 +193,10 @@ export async function logActivityEvent(
     case "UNLOCK":
       patch.lock_status = "Unlocked"
       break
+    case "DEPLOY_DATE_EDIT":
+      // due_date is a GENERATED column → recalculates from the new deploy_date.
+      patch.deploy_date = event.newDate
+      break
     case "PAYMENT":
     case "DEPOSIT":
       // computed via view, nothing to patch
@@ -188,6 +209,21 @@ export async function logActivityEvent(
       .update(patch)
       .eq("id", deploymentId)
     if (updateErr) throw updateErr
+  }
+
+  // 3) DEPLOY_DATE_EDIT side-effect: keep the initial payment/deposit aligned
+  // with the deployment's start date. We shift PAYMENT/DEPOSIT rows whose
+  // event_date matched the OLD deploy date (i.e. those captured at creation)
+  // onto the new date. Later, separately-dated payments are left untouched.
+  if (event.type === "DEPLOY_DATE_EDIT") {
+    const { error: shiftErr } = await supabase
+      .from("activity_log")
+      .update({ event_date: event.newDate })
+      .eq("deployment_id", deploymentId)
+      .in("event_type", ["PAYMENT", "DEPOSIT"])
+      .eq("event_date", event.oldDate)
+      .is("deleted_at", null)
+    if (shiftErr) throw shiftErr
   }
 }
 

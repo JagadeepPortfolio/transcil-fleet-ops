@@ -5,6 +5,7 @@ import { ArrowLeft, StickyNote } from "lucide-react"
 import { getDeployment } from "@/lib/db/deployments"
 import { listActivityForDeployment } from "@/lib/db/activity-log"
 import { listAvailableVehicles } from "@/lib/db/vehicles"
+import { getCurrentRole } from "@/lib/auth/role"
 import { formatDate } from "@/lib/dates"
 
 import { Button } from "@/components/ui/button"
@@ -40,12 +41,14 @@ export default async function DeploymentDetailPage({
   const d = await getDeployment(params.id)
   if (!d) notFound()
 
-  const [log, availableVehicles] = await Promise.all([
+  const [log, availableVehicles, role] = await Promise.all([
     listActivityForDeployment(params.id),
     d.status === "ACTIVE" || d.status === "LOCKED"
       ? listAvailableVehicles()
       : Promise.resolve([]),
+    getCurrentRole(),
   ])
+  const isCmd = role === "CMD"
 
   const inr = (v: number | null | undefined) =>
     v != null ? `₹${Number(v).toLocaleString("en-IN")}` : "—"
@@ -92,6 +95,8 @@ export default async function DeploymentDetailPage({
                     vtd_no: v.vtd_no,
                     colour: v.colour,
                   }))}
+                  isCmd={isCmd}
+                  deployDate={d.deploy_date}
                 />
               </Card>
             </div>
@@ -217,7 +222,11 @@ export default async function DeploymentDetailPage({
                           {(e.created_by_name as string) ?? "—"}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {(e.notes as string) ?? ""}
+                          {e.event_type === "DEPLOY_DATE_EDIT"
+                            ? `${formatDate(e.old_value as string)} → ${formatDate(
+                                e.new_value as string
+                              )}${e.reason ? ` · ${e.reason as string}` : ""}`
+                            : ((e.notes as string) ?? "")}
                         </TableCell>
                       </TableRow>
                     ))

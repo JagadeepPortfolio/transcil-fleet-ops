@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import { logActivityEvent } from "@/lib/db/activity-log"
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentRole } from "@/lib/auth/role"
 import {
   paymentSchema,
   depositSchema,
@@ -14,6 +15,7 @@ import {
   returnSchema,
   lockSchema,
   unlockSchema,
+  deployDateEditSchema,
 } from "@/lib/validation/activity"
 
 /**
@@ -328,6 +330,59 @@ export async function unlockVehicleAction(
       type: "UNLOCK",
       eventDate: parsed.data.event_date,
       notes: parsed.data.notes,
+    })
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
+
+  revalidatePath(`/deployments/${deploymentId}`)
+  revalidatePath("/deployments")
+  revalidatePath("/dashboard")
+  return { ok: true }
+}
+
+/**
+ * DEPLOY_DATE_EDIT — CMD-only correction of a deployment's deploy_date.
+ *
+ * Records old → new + reason on the activity timeline and patches deploy_date
+ * (due_date regenerates) through the single write path. Gated to CMD in addition
+ * to the UI hiding the control.
+ */
+export async function editDeployDateAction(
+  deploymentId: string,
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  if ((await getCurrentRole()) !== "CMD") {
+    return { ok: false, error: "Only CMD can edit the deploy date." }
+  }
+
+  const parsed = deployDateEditSchema.safeParse(fd(formData))
+  if (!parsed.success) return { ok: false, error: fieldErrors(parsed) }
+
+  const supabase = createClient()
+  const { data: dep, error: readErr } = await supabase
+    .from("deployments")
+    .select("deploy_date")
+    .eq("id", deploymentId)
+    .maybeSingle()
+  if (readErr) return { ok: false, error: readErr.message }
+  if (!dep) return { ok: false, error: "Deployment not found" }
+
+  const oldDate = (dep as { deploy_date: string }).deploy_date
+  const newDate = parsed.data.new_deploy_date
+  if (oldDate === newDate) {
+    return { ok: false, error: "New date is the same as the current date." }
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+  try {
+    await logActivityEvent(deploymentId, {
+      type: "DEPLOY_DATE_EDIT",
+      eventDate: today,
+      oldDate,
+      newDate,
+      reason: parsed.data.reason,
     })
   } catch (e) {
     return { ok: false, error: (e as Error).message }

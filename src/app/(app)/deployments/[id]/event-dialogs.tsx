@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useFormState, useFormStatus } from "react-dom"
 import { Dialog } from "@base-ui/react/dialog"
-import { ArrowLeftRight, CalendarPlus, CreditCard, Landmark, Lock, LogOut, PhoneCall, Undo2, Unlock, X } from "lucide-react"
+import { ArrowLeftRight, CalendarCog, CalendarPlus, CreditCard, Landmark, Lock, LogOut, PhoneCall, Undo2, Unlock, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,6 +15,7 @@ import {
 import { CALL_OUTCOMES, PAYMENT_MODES, RETURN_REASONS, RETURN_REASONS_FULL } from "@/lib/validation/activity"
 import {
   type ActionState,
+  editDeployDateAction,
   extendDeploymentAction,
   lockVehicleAction,
   logReminderCallAction,
@@ -39,7 +40,7 @@ import {
  * render inline in the same form.
  */
 
-type DialogKey = "payment" | "deposit" | "refund" | "call" | "replace" | "extend" | "return" | "lock" | "unlock" | null
+type DialogKey = "payment" | "deposit" | "refund" | "call" | "replace" | "extend" | "return" | "lock" | "unlock" | "editDate" | null
 
 export type AvailableVehicle = { id: string; vtd_no: string; colour: string | null }
 
@@ -57,11 +58,17 @@ export function EventDialogs({
   deploymentStatus,
   currentVtd,
   availableVehicles,
+  isCmd = false,
+  deployDate,
 }: {
   deploymentId: string
   deploymentStatus: string
   currentVtd: string
   availableVehicles: AvailableVehicle[]
+  /** CMD-only controls (e.g. edit deploy date). */
+  isCmd?: boolean
+  /** Current deploy_date (YYYY-MM-DD), for the edit-date dialog. */
+  deployDate?: string
 }) {
   const [open, setOpen] = React.useState<DialogKey>(null)
   const close = React.useCallback(() => setOpen(null), [])
@@ -98,6 +105,11 @@ export function EventDialogs({
         {deploymentStatus === "LOCKED" ? (
           <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("unlock")}>
             <Unlock /> Unlock vehicle
+          </Button>
+        ) : null}
+        {isCmd ? (
+          <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("editDate")}>
+            <CalendarCog /> Edit deploy date
           </Button>
         ) : null}
       </div>
@@ -149,6 +161,14 @@ export function EventDialogs({
         open={open === "unlock"}
         onClose={close}
       />
+      {isCmd ? (
+        <EditDeployDateDialog
+          deploymentId={deploymentId}
+          currentDeployDate={deployDate ?? ""}
+          open={open === "editDate"}
+          onClose={close}
+        />
+      ) : null}
     </>
   )
 }
@@ -808,6 +828,69 @@ function UnlockDialog({
             Cancel
           </Button>
           <SubmitButton label="Unlock vehicle" />
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  DEPLOY_DATE_EDIT (CMD only)
+// ─────────────────────────────────────────────────────────────────────────
+
+function EditDeployDateDialog({
+  deploymentId,
+  currentDeployDate,
+  open,
+  onClose,
+}: {
+  deploymentId: string
+  currentDeployDate: string
+  open: boolean
+  onClose: () => void
+}) {
+  const [state, formAction] = useFormState(
+    editDeployDateAction.bind(null, deploymentId),
+    INITIAL
+  )
+  useCloseOnSuccess(state, onClose)
+
+  return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Edit deploy date"
+      description="Correct the deployment's start date. Due date recalculates, and the initial payment/deposit (recorded on the old date) move to the new date. The change is logged on the timeline with your reason."
+    >
+      <form action={formAction} className="space-y-4">
+        <FormError message={state.error} />
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label="Current date"
+            name="current_date_display"
+            type="date"
+            defaultValue={currentDeployDate}
+            inputProps={{ readOnly: true, disabled: true }}
+          />
+          <Field
+            label="New deploy date"
+            name="new_deploy_date"
+            type="date"
+            required
+            defaultValue={currentDeployDate}
+          />
+        </div>
+        <TextareaField
+          label="Reason"
+          name="reason"
+          rows={2}
+          hint="Why the date is being corrected (required for the audit trail)."
+        />
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <SubmitButton label="Save new date" />
         </div>
       </form>
     </DialogShell>

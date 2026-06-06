@@ -200,3 +200,14 @@ export const unlockSchema = z.object({
   notes: notesSchema,
 })
 export type UnlockInput = z.infer<typeof unlockSchema>
+
+/**
+ * DEPLOY_DATE_EDIT — CMD-only correction of a deployment's deploy_date.
+ * Reason is mandatory; the old date + actor are captured for the audit trail.
+ * due_date recalculates automatically (GENERATED column).
+ */
+export const deployDateEditSchema = z.object({
+  new_deploy_date: dateSchema,
+  reason: z.string().trim().min(3, "Reason is required").max(500),
+})
+export type DeployDateEditInput = z.infer<typeof deployDateEditSchema>
