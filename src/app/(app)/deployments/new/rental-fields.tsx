@@ -174,7 +174,7 @@ export function RentalFields({ today }: { today: string }) {
           <Field
             label="Transaction ID (UTR)"
             name="payment_txn_id"
-            hint="UPI/bank ref — leave blank for cash."
+            hint="UPI / app reference number."
           />
         </div>
       </fieldset>
@@ -214,7 +214,7 @@ export function RentalFields({ today }: { today: string }) {
               <Field
                 label="Transaction ID (UTR)"
                 name="deposit_txn_id"
-                hint="UPI/bank ref — leave blank for cash."
+                hint="UPI / app reference number."
               />
             </div>
           </>

@@ -285,7 +285,7 @@ function PaymentDialog({
           <Field
             label="Transaction ID (UTR)"
             name="transaction_id"
-            hint="UPI ref, receipt no, bank ref… leave blank for cash"
+            hint="UPI / app reference number"
           />
         </div>
         <Field

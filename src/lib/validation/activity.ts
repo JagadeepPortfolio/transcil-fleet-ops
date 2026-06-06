@@ -19,7 +19,7 @@ import { dbUuid } from "./helpers"
  * until one is added later.
  */
 
-export const PAYMENT_MODES = ["UPI", "Bank Transfer", "Cash"] as const
+export const PAYMENT_MODES = ["UPI", "Mobile App"] as const
 
 const dateSchema = z
   .string()
