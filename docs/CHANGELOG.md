@@ -272,6 +272,9 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
   Kukatpally H26030003, Vijayawada H26030004, Vizag H26040005) and **Guntur
   (H26060006)** added. Default-hub lookups (new vehicle/deployment) resolve
   Nagole by name, not code.
+- **Migration 0031**: New Deployment captures **battery number** + **charger
+  cable number** (required); shown on the deployment detail. View recreated to
+  expose the columns.
 
 ---
 

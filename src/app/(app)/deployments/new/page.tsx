@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
 import { Card } from "@/components/ui/card"
 import {
+  Field,
   SelectField,
   TextareaField,
   FormError,
@@ -38,6 +39,8 @@ async function createDeployment(formData: FormData) {
     rate_inr: formData.get("rate_inr"),
     deposit_required_inr: formData.get("deposit_required_inr") ?? 0,
     new_deposit_needed: formData.get("new_deposit_needed") === "on",
+    battery_number: formData.get("battery_number") ?? "",
+    charger_cable_number: formData.get("charger_cable_number") ?? "",
     notes: formData.get("notes") ?? "",
   })
 
@@ -98,6 +101,8 @@ async function createDeployment(formData: FormData) {
       rate_inr: input.rate_inr,
       deposit_required_inr: input.deposit_required_inr,
       new_deposit_needed: input.new_deposit_needed,
+      battery_number: input.battery_number,
+      charger_cable_number: input.charger_cable_number,
       notes: input.notes || null,
       status: "ACTIVE",
       created_by: userId,
@@ -232,6 +237,20 @@ export default async function NewDeploymentPage({
               </option>
             ))}
           </SelectField>
+
+          <div className="space-y-1.5">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Accessories handed over
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Battery number" name="battery_number" required />
+              <Field
+                label="Charger cable number"
+                name="charger_cable_number"
+                required
+              />
+            </div>
+          </div>
 
           <RentalFields today={today} />
 

@@ -32,7 +32,8 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
   `hub_id`, `deploy_date`, `weeks`, `rate_inr` (always ₹/week),
   `deposit_required_inr`, `new_deposit_needed`, `deposit_refund_status`,
   `status` (`deployment_status`), `call_status`, `lock_*`, `return_*`,
-  **`rental_type` (0020)**, **`deployment_code` (0021)**, `notes`, audit.
+  **`rental_type` (0020)**, **`deployment_code` (0021)**,
+  **`battery_number` / `charger_cable_number` (0031)**, `notes`, audit.
   `due_date` is **GENERATED** = `deploy_date + weeks*7` (recalcs on edit).
 - **activity_log** — audit trail of rider-flow events; written **only** via
   `logActivityEvent()`. Columns include `event_type` (`activity_event_type`),

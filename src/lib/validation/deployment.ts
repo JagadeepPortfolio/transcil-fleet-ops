@@ -18,6 +18,16 @@ export const deploymentCreateSchema = z.object({
     .nonnegative("Deposit cannot be negative")
     .default(0),
   new_deposit_needed: z.coerce.boolean().default(true),
+  battery_number: z
+    .string()
+    .trim()
+    .min(1, "Battery number is required")
+    .max(60),
+  charger_cable_number: z
+    .string()
+    .trim()
+    .min(1, "Charger cable number is required")
+    .max(60),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
 })
 

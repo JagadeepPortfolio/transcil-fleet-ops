@@ -157,6 +157,8 @@ export default async function DeploymentDetailPage({
               value={inr(d.balance)}
               accent={d.balance != null && d.balance > 0}
             />
+            <InfoCard label="Battery no." value={d.battery_number ?? "—"} />
+            <InfoCard label="Charger cable no." value={d.charger_cable_number ?? "—"} />
           </div>
 
           {d.notes ? (
