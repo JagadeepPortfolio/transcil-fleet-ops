@@ -60,6 +60,8 @@ export function EventDialogs({
   availableVehicles,
   isCmd = false,
   deployDate,
+  issuedBattery,
+  issuedCharger,
 }: {
   deploymentId: string
   deploymentStatus: string
@@ -69,6 +71,9 @@ export function EventDialogs({
   isCmd?: boolean
   /** Current deploy_date (YYYY-MM-DD), for the edit-date dialog. */
   deployDate?: string
+  /** Issued accessory numbers, shown as a reference on the Return dialog. */
+  issuedBattery?: string | null
+  issuedCharger?: string | null
 }) {
   const [open, setOpen] = React.useState<DialogKey>(null)
   const close = React.useCallback(() => setOpen(null), [])
@@ -148,6 +153,8 @@ export function EventDialogs({
       />
       <ReturnDialog
         deploymentId={deploymentId}
+        issuedBattery={issuedBattery}
+        issuedCharger={issuedCharger}
         open={open === "return"}
         onClose={close}
       />
@@ -674,10 +681,14 @@ function ExtensionDialog({
 
 function ReturnDialog({
   deploymentId,
+  issuedBattery,
+  issuedCharger,
   open,
   onClose,
 }: {
   deploymentId: string
+  issuedBattery?: string | null
+  issuedCharger?: string | null
   open: boolean
   onClose: () => void
 }) {
@@ -713,6 +724,23 @@ function ReturnDialog({
             </option>
           ))}
         </SelectField>
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Issued at deployment — Battery: <span className="font-mono">{issuedBattery ?? "—"}</span> · Charger: <span className="font-mono">{issuedCharger ?? "—"}</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label="Returned battery no."
+            name="battery_number"
+            required
+            hint="Verify against issued"
+          />
+          <Field
+            label="Returned charger cable no."
+            name="charger_cable_number"
+            required
+            hint="Verify against issued"
+          />
+        </div>
         <TextareaField
           label="Notes"
           name="notes"

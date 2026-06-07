@@ -175,6 +175,16 @@ export const returnSchema = z.object({
   reason: z.enum(RETURN_REASONS_FULL, {
     message: "Pick a return reason",
   }),
+  battery_number: z
+    .string()
+    .trim()
+    .min(1, "Returned battery number is required")
+    .max(60),
+  charger_cable_number: z
+    .string()
+    .trim()
+    .min(1, "Returned charger cable number is required")
+    .max(60),
   notes: notesSchema,
 })
 export type ReturnInput = z.infer<typeof returnSchema>

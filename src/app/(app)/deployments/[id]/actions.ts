@@ -270,6 +270,8 @@ export async function returnVehicleAction(
       type: "RETURN",
       eventDate: parsed.data.event_date,
       reason: parsed.data.reason,
+      batteryNumber: parsed.data.battery_number,
+      chargerCableNumber: parsed.data.charger_cable_number,
       notes: parsed.data.notes,
     })
   } catch (e) {

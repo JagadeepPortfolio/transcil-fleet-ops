@@ -39,7 +39,8 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
   `logActivityEvent()`. Columns include `event_type` (`activity_event_type`),
   `event_date`, `amount_inr`, `transaction_id`, `payment_mode`, `week_number`,
   replacement/return/extension fields, **`old_value`/`new_value` (0027)**,
-  `reason`, `notes`, audit + **`created_by_name`**.
+  **`battery_number`/`charger_cable_number` (0032 — returned-accessory
+  verification on RETURN)**, `reason`, `notes`, audit + **`created_by_name`**.
 - **app_users** — `id` (=auth.users.id), `role` (`app_role`), `full_name`,
   `hub_id`. `handle_new_user` trigger seeds a baseline row on signup.
 

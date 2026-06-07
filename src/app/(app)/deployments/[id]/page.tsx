@@ -97,6 +97,8 @@ export default async function DeploymentDetailPage({
                   }))}
                   isCmd={isCmd}
                   deployDate={d.deploy_date}
+                  issuedBattery={d.battery_number}
+                  issuedCharger={d.charger_cable_number}
                 />
               </Card>
             </div>
@@ -224,11 +226,33 @@ export default async function DeploymentDetailPage({
                           {(e.created_by_name as string) ?? "—"}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {e.event_type === "DEPLOY_DATE_EDIT"
-                            ? `${formatDate(e.old_value as string)} → ${formatDate(
-                                e.new_value as string
-                              )}${e.reason ? ` · ${e.reason as string}` : ""}`
-                            : ((e.notes as string) ?? "")}
+                          {e.event_type === "DEPLOY_DATE_EDIT" ? (
+                            `${formatDate(e.old_value as string)} → ${formatDate(
+                              e.new_value as string
+                            )}${e.reason ? ` · ${e.reason as string}` : ""}`
+                          ) : e.event_type === "RETURN" &&
+                            (e.battery_number || e.charger_cable_number) ? (
+                            (() => {
+                              const rb = e.battery_number as string | null
+                              const rc = e.charger_cable_number as string | null
+                              const mismatch =
+                                (!!d.battery_number && !!rb && rb !== d.battery_number) ||
+                                (!!d.charger_cable_number && !!rc && rc !== d.charger_cable_number)
+                              return (
+                                <span>
+                                  Battery {rb ?? "—"} · Charger {rc ?? "—"}
+                                  {mismatch ? (
+                                    <span className="ml-1 font-semibold text-destructive">
+                                      ⚠ mismatch
+                                    </span>
+                                  ) : null}
+                                  {e.reason ? ` · ${e.reason as string}` : ""}
+                                </span>
+                              )
+                            })()
+                          ) : (
+                            ((e.notes as string) ?? "")
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

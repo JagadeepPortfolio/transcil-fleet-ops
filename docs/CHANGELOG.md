@@ -275,6 +275,9 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 - **Migration 0031**: New Deployment captures **battery number** + **charger
   cable number** (required); shown on the deployment detail. View recreated to
   expose the columns.
+- **Migration 0032**: Return dialog captures the **returned** battery & charger
+  cable numbers (required) on the RETURN activity_log row; shows the issued
+  values for reference and flags a **⚠ mismatch** on the timeline.
 
 ---
 
