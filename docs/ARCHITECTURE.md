@@ -44,7 +44,8 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
 
 ## Tables (reference / support)
 
-- **locations**, **hubs** (NAG/KUK/VJA/VIZ after 0015), **vehicle_types**.
+- **locations**, **hubs** (5 active — Nagole/Kukatpally/Vijayawada/Vizag/Guntur;
+  `code` holds the legacy HubID e.g. `H25110002`, set in 0030), **vehicle_types**.
 - **vehicle_reference (0026)** — read-only legacy catalog (~2,585 rows):
   `ec_no` PK → `device_id`, `chassis_no`, `color`. Powers EC-No autofill.
 - **deployment_code_counters (0021)** — `year` PK, `last_seq`. Per-year sequence

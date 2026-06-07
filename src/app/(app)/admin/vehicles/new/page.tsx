@@ -15,8 +15,8 @@ import { FormError } from "@/components/ui/form-fields"
 import { VehicleEntryFields } from "./vehicle-entry-fields"
 
 // Vehicle type is no longer chosen in the UI; new vehicles default to
-// E-Scooter. Hub is always Nagole (code "NAG").
-const DEFAULT_HUB_CODE = "NAG"
+// E-Scooter. Hub is always Nagole (resolved by name, not code).
+const DEFAULT_HUB_NAME = "Nagole"
 const DEFAULT_VEHICLE_TYPE_NAME = "E-Scooter"
 
 export const metadata = {
@@ -44,7 +44,7 @@ async function createVehicle(formData: FormData) {
 
   // Resolve the always-on defaults: Nagole hub + E-Scooter vehicle type.
   const [hubs, types] = await Promise.all([listHubs(), listVehicleTypes()])
-  const hub = hubs.find((h) => h.code === DEFAULT_HUB_CODE) ?? hubs[0]
+  const hub = hubs.find((h) => h.name === DEFAULT_HUB_NAME) ?? hubs[0]
   const vehicleType =
     types.find((t) => t.name === DEFAULT_VEHICLE_TYPE_NAME) ?? types[0]
   if (!hub || !vehicleType) {

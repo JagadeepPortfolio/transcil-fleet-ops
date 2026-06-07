@@ -166,7 +166,7 @@ export default async function NewDeploymentPage({
   ])
 
   const today = new Date().toISOString().slice(0, 10)
-  const defaultHubId = hubs.find((h) => h.code === "NAG")?.id
+  const defaultHubId = hubs.find((h) => h.name === "Nagole")?.id
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

@@ -265,6 +265,16 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 19 — Rider fields + hub codes (2026-06-07)
+
+- Made rider **Address** mandatory (New Rider).
+- **Migration 0030**: hub `code` now holds the legacy HubIDs (Nagole H25110002,
+  Kukatpally H26030003, Vijayawada H26030004, Vizag H26040005) and **Guntur
+  (H26060006)** added. Default-hub lookups (new vehicle/deployment) resolve
+  Nagole by name, not code.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

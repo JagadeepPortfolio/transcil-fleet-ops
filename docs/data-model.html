@@ -346,7 +346,7 @@ erDiagram
     <thead><tr><th>Table</th><th>Key columns</th><th>Notes</th></tr></thead>
     <tbody>
       <tr><td class="col">locations</td><td class="type">id PK, name UQ</td><td class="desc">Telangana cities + Vijayawada/Vizag (0015)</td></tr>
-      <tr><td class="col">hubs</td><td class="type">id PK, code UQ, location_id FK, deleted_at</td><td class="desc">NAG/KUK/VJA/VIZ active; HYD/SEC/CYB/WGL/KAR/NZB soft-deleted as <code>[retired]</code></td></tr>
+      <tr><td class="col">hubs</td><td class="type">id PK, code UQ, location_id FK, deleted_at</td><td class="desc">5 active (Nagole/Kukatpally/Vijayawada/Vizag/Guntur); <code>code</code> = legacy HubID e.g. H25110002 (0030); 6 older hubs soft-deleted as <code>[retired]</code></td></tr>
       <tr><td class="col">vehicle_types</td><td class="type">id PK, name UQ</td><td class="desc">E-Bike Standard/Pro, E-Scooter, Cargo E-Bike/E-Trike</td></tr>
       <tr><td class="col">app_users</td><td class="type">id PK = auth.users.id, role, hub_id FK</td><td class="desc"><code>role_hub_check</code> dropped in 0012; RLS handles un-hubbed staff. Auto-created by <code>handle_new_user()</code> trigger.</td></tr>
     </tbody>
