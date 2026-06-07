@@ -58,7 +58,9 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
 - **deployment_totals** — per-deployment money aggregates. Sums only rows with
   `transaction_id IS NOT NULL`: `total_paid` (PAYMENT), `deposit_collected`
   (DEPOSIT), `deposit_refunded` (DEPOSIT_REFUND). `total_due = weeks*rate_inr +
-  (deposit_required if new_deposit_needed)`.
+  (deposit_required if new_deposit_needed)`. **`total_paid` excludes late-fee
+  PAYMENTs** (`payment_category IS DISTINCT FROM 'Late fee'`, 0033) — late fees
+  are tracked in the timeline but don't reduce the rent balance.
 - **deployments_enriched** — `d.*` + rider/vehicle/hub joins + computed
   (rebuilt in 0021/0025). **Money model (0025):**
   - `total_paid = rent paid + deposit_collected`
@@ -83,6 +85,8 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
   (CMD/HUB_MANAGER/FIELD_STAFF)
 - Payment modes (app-level, CHECK on `activity_log.payment_mode`): **UPI,
   Mobile App** *(0024)*
+- Payment category (CHECK on `activity_log.payment_category`, nullable):
+  **Billing Cycle, Late fee** *(0033)* — null/legacy rows count as rent
 
 ## Money model
 

@@ -281,6 +281,23 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 20 — Return late fee + categorized payments (2026-06-07)
+
+- **Migration 0033**: `activity_log.payment_category` (`Billing Cycle` | `Late
+  fee`, nullable; null/legacy rows treated as rent). `deployment_totals` rent
+  sum now excludes late-fee payments (`payment_category IS DISTINCT FROM 'Late
+  fee'`) so collecting a late fee does **not** reduce the rent balance.
+- **Record Payment** now has a required **"Payment for"** dropdown (Billing
+  Cycle / Late fee). Timeline tags each PAYMENT with its category. The auto
+  initial payment on New Deployment is logged as **Billing Cycle**.
+- **Return Vehicle** screen shows a live **balance-to-collect** breakdown: rent
+  outstanding + late fee (`days late × ⌈rate ÷ 7⌉`, ₹257/day for ₹1799/wk) =
+  total to collect. Late fee is **informational** at return — collected via
+  Record Payment, not auto-charged. Recomputes as the return date changes; ₹0
+  late fee on/before the due date.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

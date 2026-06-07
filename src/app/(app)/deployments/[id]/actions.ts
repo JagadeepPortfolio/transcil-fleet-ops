@@ -58,6 +58,7 @@ export async function recordPaymentAction(
       eventDate: parsed.data.event_date,
       amountInr: parsed.data.amount_inr,
       paymentMode: parsed.data.payment_mode,
+      paymentCategory: parsed.data.payment_category,
       weekNumber: parsed.data.week_number,
       transactionId: parsed.data.transaction_id,
       additionalTransactionId: parsed.data.additional_transaction_id,

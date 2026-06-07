@@ -56,6 +56,7 @@ async function createDeployment(formData: FormData) {
     event_date: input.deploy_date,
     amount_inr: formData.get("payment_amount_inr"),
     payment_mode: formData.get("payment_mode"),
+    payment_category: "Billing Cycle",
     week_number: formData.get("payment_week_number") ?? "",
     transaction_id: formData.get("payment_txn_id") ?? "",
   })
@@ -141,6 +142,7 @@ async function createDeployment(formData: FormData) {
       eventDate: payParsed.data.event_date,
       amountInr: payParsed.data.amount_inr,
       paymentMode: payParsed.data.payment_mode,
+      paymentCategory: payParsed.data.payment_category,
       weekNumber: payParsed.data.week_number,
       transactionId: payParsed.data.transaction_id,
     })

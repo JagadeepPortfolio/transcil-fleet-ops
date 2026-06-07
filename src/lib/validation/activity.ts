@@ -21,6 +21,8 @@ import { dbUuid } from "./helpers"
 
 export const PAYMENT_MODES = ["UPI", "Mobile App"] as const
 
+export const paymentCategories = ["Billing Cycle", "Late fee"] as const
+
 const dateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
@@ -56,6 +58,7 @@ export const paymentSchema = z.object({
   event_date: dateSchema,
   amount_inr: moneySchema,
   payment_mode: z.enum(PAYMENT_MODES, { message: "Pick a payment mode" }),
+  payment_category: z.enum(paymentCategories, { message: "Pick what the payment is for" }),
   week_number: z.coerce
     .number()
     .int()

@@ -34,6 +34,7 @@ export type ActivityEventInput =
       eventDate: string
       amountInr: number
       paymentMode: string
+      paymentCategory?: string
       weekNumber?: number
       transactionId?: string
       additionalTransactionId?: string
@@ -115,6 +116,7 @@ export async function logActivityEvent(
     case "PAYMENT":
       insertPayload.amount_inr = event.amountInr
       insertPayload.payment_mode = event.paymentMode
+      insertPayload.payment_category = event.paymentCategory ?? null
       insertPayload.week_number = event.weekNumber ?? null
       insertPayload.transaction_id = event.transactionId ?? null
       insertPayload.additional_transaction_id = event.additionalTransactionId ?? null

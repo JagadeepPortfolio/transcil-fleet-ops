@@ -12,7 +12,7 @@ import {
   SelectField,
   TextareaField,
 } from "@/components/ui/form-fields"
-import { CALL_OUTCOMES, PAYMENT_MODES, RETURN_REASONS, RETURN_REASONS_FULL } from "@/lib/validation/activity"
+import { CALL_OUTCOMES, PAYMENT_MODES, paymentCategories, RETURN_REASONS, RETURN_REASONS_FULL } from "@/lib/validation/activity"
 import {
   type ActionState,
   editDeployDateAction,
@@ -62,6 +62,9 @@ export function EventDialogs({
   deployDate,
   issuedBattery,
   issuedCharger,
+  dueDate,
+  dailyLateRate = 0,
+  rentOutstanding = 0,
 }: {
   deploymentId: string
   deploymentStatus: string
@@ -74,6 +77,10 @@ export function EventDialogs({
   /** Issued accessory numbers, shown as a reference on the Return dialog. */
   issuedBattery?: string | null
   issuedCharger?: string | null
+  /** Return-balance inputs. */
+  dueDate?: string
+  dailyLateRate?: number
+  rentOutstanding?: number
 }) {
   const [open, setOpen] = React.useState<DialogKey>(null)
   const close = React.useCallback(() => setOpen(null), [])
@@ -155,6 +162,9 @@ export function EventDialogs({
         deploymentId={deploymentId}
         issuedBattery={issuedBattery}
         issuedCharger={issuedCharger}
+        dueDate={dueDate}
+        dailyLateRate={dailyLateRate}
+        rentOutstanding={rentOutstanding}
         open={open === "return"}
         onClose={close}
       />
@@ -291,16 +301,25 @@ function PaymentDialog({
             inputProps={{ min: 0, step: "0.01", inputMode: "decimal" }}
           />
         </div>
-        <SelectField label="Payment mode" name="payment_mode" required>
-          <option value="" disabled>
-            Choose…
-          </option>
-          {PAYMENT_MODES.map((m) => (
-            <option key={m} value={m}>
-              {m}
+        <div className="grid grid-cols-2 gap-3">
+          <SelectField label="Payment mode" name="payment_mode" required>
+            <option value="" disabled>
+              Choose…
             </option>
-          ))}
-        </SelectField>
+            {PAYMENT_MODES.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField label="Payment for" name="payment_category" required>
+            {paymentCategories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </SelectField>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <Field
             label="Week #"
@@ -683,12 +702,18 @@ function ReturnDialog({
   deploymentId,
   issuedBattery,
   issuedCharger,
+  dueDate,
+  dailyLateRate = 0,
+  rentOutstanding = 0,
   open,
   onClose,
 }: {
   deploymentId: string
   issuedBattery?: string | null
   issuedCharger?: string | null
+  dueDate?: string
+  dailyLateRate?: number
+  rentOutstanding?: number
   open: boolean
   onClose: () => void
 }) {
@@ -697,6 +722,20 @@ function ReturnDialog({
     INITIAL
   )
   useCloseOnSuccess(state, onClose)
+
+  const [returnDate, setReturnDate] = React.useState(today())
+  const daysLate =
+    dueDate && returnDate
+      ? Math.max(
+          0,
+          Math.round(
+            (Date.parse(returnDate) - Date.parse(dueDate)) / 86_400_000
+          )
+        )
+      : 0
+  const lateFee = daysLate * dailyLateRate
+  const totalToCollect = rentOutstanding + lateFee
+  const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`
 
   return (
     <DialogShell
@@ -712,8 +751,37 @@ function ReturnDialog({
           name="event_date"
           type="date"
           required
-          defaultValue={today()}
+          inputProps={{
+            value: returnDate,
+            onChange: (e) => setReturnDate(e.target.value),
+          }}
         />
+        <div className="space-y-1.5 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Rent outstanding</span>
+            <span className="font-medium tabular-nums">
+              {inr(rentOutstanding)}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">
+              Late fee{" "}
+              {daysLate > 0
+                ? `(${daysLate} day${daysLate === 1 ? "" : "s"} × ${inr(dailyLateRate)})`
+                : "(on time)"}
+            </span>
+            <span className="font-medium tabular-nums">{inr(lateFee)}</span>
+          </div>
+          <div className="flex justify-between border-t border-amber-200 pt-1 font-semibold text-foreground">
+            <span>Total to collect</span>
+            <span className="tabular-nums">{inr(totalToCollect)}</span>
+          </div>
+          <p className="pt-1 text-[11px] leading-snug text-muted-foreground">
+            Collect via Record Payment — rent as <b>Billing Cycle</b>, the late
+            charge as <b>Late fee</b>. This is informational; returning does not
+            auto-charge.
+          </p>
+        </div>
         <SelectField label="Return reason" name="reason" required>
           <option value="" disabled>
             Choose…

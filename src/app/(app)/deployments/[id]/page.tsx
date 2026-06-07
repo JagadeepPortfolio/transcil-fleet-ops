@@ -55,6 +55,12 @@ export default async function DeploymentDetailPage({
 
   const showActions = d.status === "ACTIVE" || d.status === "LOCKED"
 
+  // Return-balance inputs. enriched.total_paid = rent paid + deposit collected,
+  // so rent paid alone = total_paid − deposit_collected.
+  const rentPaid = (d.total_paid ?? 0) - (d.deposit_collected ?? 0)
+  const rentOutstanding = Math.max(0, d.weeks * d.rate_inr - rentPaid)
+  const dailyLateRate = Math.round(d.rate_inr / 7)
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <PageHeader
@@ -99,6 +105,9 @@ export default async function DeploymentDetailPage({
                   deployDate={d.deploy_date}
                   issuedBattery={d.battery_number}
                   issuedCharger={d.charger_cable_number}
+                  dueDate={d.due_date}
+                  dailyLateRate={dailyLateRate}
+                  rentOutstanding={rentOutstanding}
                 />
               </Card>
             </div>
@@ -206,6 +215,17 @@ export default async function DeploymentDetailPage({
                         </TableCell>
                         <TableCell className="font-medium">
                           {e.event_type as string}
+                          {e.event_type === "PAYMENT" && e.payment_category ? (
+                            <span
+                              className={`ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                                e.payment_category === "Late fee"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {e.payment_category as string}
+                            </span>
+                          ) : null}
                         </TableCell>
                         <TableCell className="text-right font-mono text-xs tabular-nums">
                           {e.amount_inr != null
