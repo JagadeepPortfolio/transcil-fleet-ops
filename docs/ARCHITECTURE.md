@@ -61,9 +61,13 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
   (deposit_required if new_deposit_needed)`. **`total_paid` excludes late-fee
   PAYMENTs** (`payment_category IS DISTINCT FROM 'Late fee'`, 0033) — late fees
   are tracked in the timeline but don't reduce the rent balance.
+  `late_fee_collected` (0034) sums the txn-gated Late-fee PAYMENTs separately.
 - **deployments_enriched** — `d.*` + rider/vehicle/hub joins + computed
-  (rebuilt in 0021/0025). **Money model (0025):**
+  (rebuilt in 0021/0025/0031/0034). **Money model (0025):**
   - `total_paid = rent paid + deposit_collected`
+  - `total_collected = rent paid + deposit_collected + late_fee_collected` (0034;
+    the "Total collected" card — all cash received). `total_paid`/`balance` stay
+    rent+deposit, so late fees don't clear the balance.
   - `balance = total_due − rent paid − deposit_collected`
   - `pay_status`: PAID when balance ≤ 0; PARTIAL when any paid; OVERDUE when past
     `due_date`; else PENDING.

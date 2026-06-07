@@ -162,7 +162,7 @@ export default async function DeploymentDetailPage({
             />
             <InfoCard label="Deposit required" value={inr(d.deposit_required_inr)} />
             <InfoCard label="Total due" value={inr(d.total_due)} />
-            <InfoCard label="Total paid" value={inr(d.total_paid)} />
+            <InfoCard label="Total collected" value={inr(d.total_collected)} />
             <InfoCard
               label="Balance"
               value={inr(d.balance)}

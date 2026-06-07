@@ -298,6 +298,20 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 21 — Total Collected (2026-06-07)
+
+- Return battery/charger numbers are now **info-only** — no exact-match
+  validation or ⚠ mismatch warning on the timeline.
+- **Migration 0034**: `deployment_totals.late_fee_collected` (txn-gated Late-fee
+  PAYMENTs); `deployments_enriched.total_collected = rent paid + deposit
+  collected + late fee collected` (also exposes `late_fee_collected`). The
+  deployment detail card **"Total paid" → "Total collected"**.
+- `total_paid`, `balance`, and `pay_status` are **unchanged** (rent + deposit) —
+  late fees are extra revenue, not part of the contract due, so they don't clear
+  the balance.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

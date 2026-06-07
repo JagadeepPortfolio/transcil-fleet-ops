@@ -34,6 +34,8 @@ export type DeploymentEnrichedRow = {
   deposit_collected: number | null
   deposit_refunded: number | null
   deposit_net: number | null
+  late_fee_collected: number | null
+  total_collected: number | null
   balance: number | null
   pay_status: "PAID" | "PARTIAL" | "OVERDUE" | "PENDING" | null
   days_left: number | null
