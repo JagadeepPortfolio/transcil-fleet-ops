@@ -2,6 +2,13 @@ import { z } from "zod"
 
 export const riderSources = ["Individual", "3PL", "Camions"] as const
 
+export const emergencyRelationships = [
+  "Father",
+  "Brother",
+  "Mother",
+  "Guardian",
+] as const
+
 export const riderCreateSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(120),
   phone: z
@@ -15,13 +22,18 @@ export const riderCreateSchema = z.object({
     .trim()
     .min(2, "Current location is required")
     .max(200),
-  alt_contact_name: z.string().trim().max(120).optional().or(z.literal("")),
-  alt_contact_number: z
+  emergency_contact_relationship: z.enum(emergencyRelationships, {
+    message: "Pick a relationship",
+  }),
+  emergency_contact_name: z
     .string()
     .trim()
-    .regex(/^[0-9]{10}$/, "Alternate number must be exactly 10 digits")
-    .optional()
-    .or(z.literal("")),
+    .min(2, "Emergency contact name is required")
+    .max(120),
+  emergency_contact_number: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{10}$/, "Emergency contact number must be 10 digits"),
   purpose: z.string().trim().max(200).optional().or(z.literal("")),
   address: z.string().trim().max(500).optional().or(z.literal("")),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),

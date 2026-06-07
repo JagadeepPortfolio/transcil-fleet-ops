@@ -47,17 +47,25 @@ const columns: ColumnDef<RiderRow>[] = [
     ),
   },
   {
-    accessorKey: "alt_contact_name",
-    header: "Alt contact",
+    accessorKey: "emergency_contact_name",
+    header: "Emergency contact",
     cell: ({ row }) => {
       const r = row.original
-      if (!r.alt_contact_name && !r.alt_contact_number) return "—"
+      if (!r.emergency_contact_name && !r.emergency_contact_number) return "—"
       return (
         <div className="text-xs">
-          <div>{r.alt_contact_name ?? "—"}</div>
-          {r.alt_contact_number ? (
+          <div>
+            {r.emergency_contact_name ?? "—"}
+            {r.emergency_contact_relationship ? (
+              <span className="text-muted-foreground">
+                {" "}
+                ({r.emergency_contact_relationship})
+              </span>
+            ) : null}
+          </div>
+          {r.emergency_contact_number ? (
             <div className="font-mono text-muted-foreground">
-              {r.alt_contact_number}
+              {r.emergency_contact_number}
             </div>
           ) : null}
         </div>

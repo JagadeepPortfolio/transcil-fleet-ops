@@ -5,7 +5,11 @@ import { ArrowLeft } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
 import { findRiderByPhone } from "@/lib/db/riders"
-import { riderCreateSchema, riderSources } from "@/lib/validation/rider"
+import {
+  riderCreateSchema,
+  riderSources,
+  emergencyRelationships,
+} from "@/lib/validation/rider"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
@@ -31,8 +35,9 @@ async function createRider(formData: FormData) {
     source: formData.get("source"),
     app_rider_id: formData.get("app_rider_id") ?? "",
     current_location: formData.get("current_location") ?? "",
-    alt_contact_name: formData.get("alt_contact_name") ?? "",
-    alt_contact_number: formData.get("alt_contact_number") ?? "",
+    emergency_contact_relationship: formData.get("emergency_contact_relationship"),
+    emergency_contact_name: formData.get("emergency_contact_name") ?? "",
+    emergency_contact_number: formData.get("emergency_contact_number") ?? "",
     purpose: formData.get("purpose") ?? "",
     address: formData.get("address") ?? "",
     notes: formData.get("notes") ?? "",
@@ -93,8 +98,9 @@ async function createRider(formData: FormData) {
     source: input.source,
     app_rider_id: input.app_rider_id || null,
     current_location: input.current_location,
-    alt_contact_name: input.alt_contact_name || null,
-    alt_contact_number: input.alt_contact_number || null,
+    emergency_contact_relationship: input.emergency_contact_relationship,
+    emergency_contact_name: input.emergency_contact_name,
+    emergency_contact_number: input.emergency_contact_number,
     purpose: input.purpose || null,
     address: input.address || null,
     notes: input.notes || null,
@@ -180,18 +186,38 @@ export default async function NewRiderPage({
             />
           </div>
           <Field label="Current location" name="current_location" required />
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Alt contact name" name="alt_contact_name" />
-            <Field
-              label="Alt contact number"
-              name="alt_contact_number"
-              inputProps={{
-                pattern: "[0-9]{10}",
-                inputMode: "numeric",
-                placeholder: "9876543210",
-              }}
-            />
+
+          <div className="space-y-1.5">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Emergency contact
+            </div>
+            <div className="grid gap-5 sm:grid-cols-3">
+              <SelectField
+                label="Relationship"
+                name="emergency_contact_relationship"
+                required
+              >
+                <option value="">Select…</option>
+                {emergencyRelationships.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </SelectField>
+              <Field label="Name" name="emergency_contact_name" required />
+              <Field
+                label="Number"
+                name="emergency_contact_number"
+                required
+                inputProps={{
+                  pattern: "[0-9]{10}",
+                  inputMode: "numeric",
+                  placeholder: "9876543210",
+                }}
+              />
+            </div>
           </div>
+
           <Field label="Purpose" name="purpose" />
           <Field label="Address" name="address" />
           <TextareaField label="Notes" name="notes" />

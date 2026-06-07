@@ -75,11 +75,17 @@ export default async function RiderDetailPage({
         <InfoCard label="Current location" value={rider.current_location ?? "—"} />
         <InfoCard label="Purpose" value={rider.purpose ?? "—"} />
         <InfoCard
-          label="Alt contact"
+          label="Emergency contact"
           value={
-            rider.alt_contact_name || rider.alt_contact_number
-              ? `${rider.alt_contact_name ?? "—"}${
-                  rider.alt_contact_number ? ` · ${rider.alt_contact_number}` : ""
+            rider.emergency_contact_name || rider.emergency_contact_number
+              ? `${rider.emergency_contact_name ?? "—"}${
+                  rider.emergency_contact_relationship
+                    ? ` (${rider.emergency_contact_relationship})`
+                    : ""
+                }${
+                  rider.emergency_contact_number
+                    ? ` · ${rider.emergency_contact_number}`
+                    : ""
                 }`
               : "—"
           }

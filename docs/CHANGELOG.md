@@ -248,6 +248,17 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 18 — Rider emergency contact (2026-06-07)
+
+- **Migration 0028**: renamed `riders.alt_contact_name/alt_contact_number` →
+  `emergency_contact_name/emergency_contact_number` and added
+  `emergency_contact_relationship` (CHECK: Father/Brother/Mother/Guardian).
+- New Rider form: **Emergency Contact** section — required Relationship dropdown +
+  Name + Number (10 digits). Riders list column and rider detail card relabeled
+  "Emergency contact" (shows name (relationship) + number).
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

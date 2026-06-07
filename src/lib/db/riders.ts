@@ -12,8 +12,9 @@ export type RiderRow = {
   source: string | null
   location_id: number | null
   current_location: string | null
-  alt_contact_name: string | null
-  alt_contact_number: string | null
+  emergency_contact_relationship: string | null
+  emergency_contact_name: string | null
+  emergency_contact_number: string | null
   purpose: string | null
   notes: string | null
   created_by_name: string | null
