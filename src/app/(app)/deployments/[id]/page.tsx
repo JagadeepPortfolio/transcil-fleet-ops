@@ -163,6 +163,12 @@ export default async function DeploymentDetailPage({
             <InfoCard label="Deposit required" value={inr(d.deposit_required_inr)} />
             <InfoCard label="Total due" value={inr(d.total_due)} />
             <InfoCard label="Total collected" value={inr(d.total_collected)} />
+            {d.late_fee_collected != null && d.late_fee_collected > 0 ? (
+              <InfoCard
+                label="Late fee collected"
+                value={inr(d.late_fee_collected)}
+              />
+            ) : null}
             <InfoCard
               label="Balance"
               value={inr(d.balance)}

@@ -305,7 +305,9 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 - **Migration 0034**: `deployment_totals.late_fee_collected` (txn-gated Late-fee
   PAYMENTs); `deployments_enriched.total_collected = rent paid + deposit
   collected + late fee collected` (also exposes `late_fee_collected`). The
-  deployment detail card **"Total paid" → "Total collected"**.
+  deployment detail card **"Total paid" → "Total collected"**. A **"Late fee
+  collected"** card appears alongside it when a late fee has been collected, so
+  the Total collected figure can be verified.
 - `total_paid`, `balance`, and `pay_status` are **unchanged** (rent + deposit) —
   late fees are extra revenue, not part of the contract due, so they don't clear
   the balance.
