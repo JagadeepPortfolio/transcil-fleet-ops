@@ -228,7 +228,7 @@ export default async function NewRiderPage({
           </div>
 
           <RiderPurposeFields />
-          <Field label="Address" name="address" />
+          <Field label="Address" name="address" required />
           <TextareaField label="Notes" name="notes" />
           <div className="grid gap-5 sm:grid-cols-2">
             <FileField label="Photo" name="photo" accept="image/*" hint="≤ 400 KB" />

@@ -55,7 +55,7 @@ export const riderCreateSchema = z.object({
   store_name: optText(120),
   store_location: optText(160),
   purpose_other: optText(300),
-  address: z.string().trim().max(500).optional().or(z.literal("")),
+  address: z.string().trim().min(5, "Address is required").max(500),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
 }).superRefine((v, ctx) => {
   if (v.purpose === "Others") {
