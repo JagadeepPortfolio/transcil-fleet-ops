@@ -311,6 +311,11 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 - `total_paid`, `balance`, and `pay_status` are **unchanged** (rent + deposit) —
   late fees are extra revenue, not part of the contract due, so they don't clear
   the balance.
+- **Extend dialog**: now extend by **Weekly or Monthly** (mirrors New
+  Deployment). A rental-type selector + count field; Monthly converts to weeks
+  (1 month = 4 weeks) and submits the computed `extra_weeks`. No schema change —
+  due date and amount due recalculate as before; the extra rent is collected via
+  Record Payment (not auto-charged).
 
 ---
 

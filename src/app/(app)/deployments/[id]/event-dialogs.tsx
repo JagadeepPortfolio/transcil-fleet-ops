@@ -13,6 +13,7 @@ import {
   TextareaField,
 } from "@/components/ui/form-fields"
 import { CALL_OUTCOMES, PAYMENT_MODES, paymentCategories, RETURN_REASONS, RETURN_REASONS_FULL } from "@/lib/validation/activity"
+import { rentalTypes } from "@/lib/validation/deployment"
 import {
   type ActionState,
   editDeployDateAction,
@@ -652,12 +653,19 @@ function ExtensionDialog({
   )
   useCloseOnSuccess(state, onClose)
 
+  const [rentalType, setRentalType] =
+    React.useState<(typeof rentalTypes)[number]>("Weekly")
+  const [count, setCount] = React.useState("1")
+  const isMonthly = rentalType === "Monthly"
+  const n = Math.max(0, parseInt(count || "0", 10) || 0)
+  const extraWeeks = isMonthly ? n * 4 : n
+
   return (
     <DialogShell
       open={open}
       onClose={onClose}
       title="Extend deployment"
-      description="Add extra weeks to this deployment. The due date recalculates automatically."
+      description="Extend by weeks or months (1 month = 4 weeks). The due date and amount due recalculate automatically; collect the extra rent via Record Payment."
     >
       <form action={formAction} className="space-y-4">
         <FormError message={state.error} />
@@ -669,14 +677,43 @@ function ExtensionDialog({
             required
             defaultValue={today()}
           />
-          <Field
-            label="Extra weeks"
-            name="extra_weeks"
-            type="number"
+          <SelectField
+            label="Extend by"
+            name="rental_type"
             required
-            inputProps={{ min: 1, max: 52, step: 1 }}
-          />
+            value={rentalType}
+            onChange={(e) => {
+              setRentalType(e.target.value as (typeof rentalTypes)[number])
+              setCount("1")
+            }}
+          >
+            {rentalTypes.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </SelectField>
         </div>
+        <Field
+          label={isMonthly ? "Number of months" : "Number of weeks"}
+          name="count_display"
+          type="number"
+          required
+          inputProps={{
+            min: 1,
+            max: isMonthly ? 12 : 52,
+            step: 1,
+            value: count,
+            onChange: (e) => setCount(e.target.value),
+          }}
+          hint={
+            isMonthly
+              ? `Each month = 4 weeks. Adds ${extraWeeks} week${extraWeeks === 1 ? "" : "s"} to the term.`
+              : undefined
+          }
+        />
+        {/* The server reads extra_weeks; monthly is converted to weeks here. */}
+        <input type="hidden" name="extra_weeks" value={String(extraWeeks)} />
         <TextareaField
           label="Notes"
           name="notes"
