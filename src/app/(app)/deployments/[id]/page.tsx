@@ -252,24 +252,11 @@ export default async function DeploymentDetailPage({
                             )}${e.reason ? ` · ${e.reason as string}` : ""}`
                           ) : e.event_type === "RETURN" &&
                             (e.battery_number || e.charger_cable_number) ? (
-                            (() => {
-                              const rb = e.battery_number as string | null
-                              const rc = e.charger_cable_number as string | null
-                              const mismatch =
-                                (!!d.battery_number && !!rb && rb !== d.battery_number) ||
-                                (!!d.charger_cable_number && !!rc && rc !== d.charger_cable_number)
-                              return (
-                                <span>
-                                  Battery {rb ?? "—"} · Charger {rc ?? "—"}
-                                  {mismatch ? (
-                                    <span className="ml-1 font-semibold text-destructive">
-                                      ⚠ mismatch
-                                    </span>
-                                  ) : null}
-                                  {e.reason ? ` · ${e.reason as string}` : ""}
-                                </span>
-                              )
-                            })()
+                            <span>
+                              Battery {(e.battery_number as string) ?? "—"} ·
+                              Charger {(e.charger_cable_number as string) ?? "—"}
+                              {e.reason ? ` · ${e.reason as string}` : ""}
+                            </span>
                           ) : (
                             ((e.notes as string) ?? "")
                           )}

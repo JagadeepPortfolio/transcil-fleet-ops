@@ -800,13 +800,13 @@ function ReturnDialog({
             label="Returned battery no."
             name="battery_number"
             required
-            hint="Verify against issued"
+            hint="For records"
           />
           <Field
             label="Returned charger cable no."
             name="charger_cable_number"
             required
-            hint="Verify against issued"
+            hint="For records"
           />
         </div>
         <TextareaField
