@@ -256,6 +256,12 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 - New Rider form: **Emergency Contact** section — required Relationship dropdown +
   Name + Number (10 digits). Riders list column and rider detail card relabeled
   "Emergency contact" (shows name (relationship) + number).
+- **Migration 0029**: structured **Purpose** — a dropdown (Big Basket, Zepto,
+  Swiggy, Swiggy Instamart, Zomato, Blinkit, Amazon, Flipkart Minute, Amazon One,
+  Others). A platform requires Store ID / Store Name / Store Location; "Others"
+  requires a free-text description. New columns `store_id`, `store_name`,
+  `store_location`, `purpose_other`; conditional zod validation; rider list +
+  detail show the selected purpose with store details.
 
 ---
 

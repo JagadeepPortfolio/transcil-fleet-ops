@@ -9,6 +9,22 @@ export const emergencyRelationships = [
   "Guardian",
 ] as const
 
+export const purposeOptions = [
+  "Big Basket",
+  "Zepto",
+  "Swiggy",
+  "Swiggy Instamart",
+  "Zomato",
+  "Blinkit",
+  "Amazon",
+  "Flipkart Minute",
+  "Amazon One",
+  "Others",
+] as const
+
+const optText = (max: number) =>
+  z.string().trim().max(max).optional().or(z.literal(""))
+
 export const riderCreateSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(120),
   phone: z
@@ -34,9 +50,25 @@ export const riderCreateSchema = z.object({
     .string()
     .trim()
     .regex(/^[0-9]{10}$/, "Emergency contact number must be 10 digits"),
-  purpose: z.string().trim().max(200).optional().or(z.literal("")),
+  purpose: z.enum(purposeOptions, { message: "Select a purpose" }),
+  store_id: optText(80),
+  store_name: optText(120),
+  store_location: optText(160),
+  purpose_other: optText(300),
   address: z.string().trim().max(500).optional().or(z.literal("")),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
+}).superRefine((v, ctx) => {
+  if (v.purpose === "Others") {
+    if (!v.purpose_other)
+      ctx.addIssue({ path: ["purpose_other"], code: z.ZodIssueCode.custom, message: "Describe the purpose" })
+  } else {
+    if (!v.store_id)
+      ctx.addIssue({ path: ["store_id"], code: z.ZodIssueCode.custom, message: "Store ID is required" })
+    if (!v.store_name)
+      ctx.addIssue({ path: ["store_name"], code: z.ZodIssueCode.custom, message: "Store name is required" })
+    if (!v.store_location)
+      ctx.addIssue({ path: ["store_location"], code: z.ZodIssueCode.custom, message: "Store location is required" })
+  }
 })
 
 export type RiderCreateInput = z.infer<typeof riderCreateSchema>

@@ -40,11 +40,17 @@ const columns: ColumnDef<RiderRow>[] = [
   {
     accessorKey: "purpose",
     header: "Purpose",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {row.original.purpose ?? "—"}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const r = row.original
+      return (
+        <span className="text-muted-foreground">
+          {r.purpose ?? "—"}
+          {r.store_name ? (
+            <span className="text-xs"> · {r.store_name}</span>
+          ) : null}
+        </span>
+      )
+    },
   },
   {
     accessorKey: "emergency_contact_name",

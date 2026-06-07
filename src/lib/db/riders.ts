@@ -16,6 +16,10 @@ export type RiderRow = {
   emergency_contact_name: string | null
   emergency_contact_number: string | null
   purpose: string | null
+  store_id: string | null
+  store_name: string | null
+  store_location: string | null
+  purpose_other: string | null
   notes: string | null
   created_by_name: string | null
   created_at: string

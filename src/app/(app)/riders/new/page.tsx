@@ -10,6 +10,7 @@ import {
   riderSources,
   emergencyRelationships,
 } from "@/lib/validation/rider"
+import { RiderPurposeFields } from "./rider-purpose-fields"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
@@ -38,7 +39,11 @@ async function createRider(formData: FormData) {
     emergency_contact_relationship: formData.get("emergency_contact_relationship"),
     emergency_contact_name: formData.get("emergency_contact_name") ?? "",
     emergency_contact_number: formData.get("emergency_contact_number") ?? "",
-    purpose: formData.get("purpose") ?? "",
+    purpose: formData.get("purpose"),
+    store_id: formData.get("store_id") ?? "",
+    store_name: formData.get("store_name") ?? "",
+    store_location: formData.get("store_location") ?? "",
+    purpose_other: formData.get("purpose_other") ?? "",
     address: formData.get("address") ?? "",
     notes: formData.get("notes") ?? "",
   })
@@ -101,7 +106,11 @@ async function createRider(formData: FormData) {
     emergency_contact_relationship: input.emergency_contact_relationship,
     emergency_contact_name: input.emergency_contact_name,
     emergency_contact_number: input.emergency_contact_number,
-    purpose: input.purpose || null,
+    purpose: input.purpose,
+    store_id: input.store_id || null,
+    store_name: input.store_name || null,
+    store_location: input.store_location || null,
+    purpose_other: input.purpose_other || null,
     address: input.address || null,
     notes: input.notes || null,
     photo_url: photoUrl,
@@ -218,7 +227,7 @@ export default async function NewRiderPage({
             </div>
           </div>
 
-          <Field label="Purpose" name="purpose" />
+          <RiderPurposeFields />
           <Field label="Address" name="address" />
           <TextareaField label="Notes" name="notes" />
           <div className="grid gap-5 sm:grid-cols-2">

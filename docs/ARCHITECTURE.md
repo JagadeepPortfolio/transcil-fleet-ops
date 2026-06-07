@@ -20,7 +20,8 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
   (legacy/unused), **`current_location` (free text, 0019)**, `app_rider_id`
   (0013), **`emergency_contact_relationship` / `emergency_contact_name` /
   `emergency_contact_number` (0018, renamed + relationship added in 0028)**,
-  **`purpose` (0018)**,
+  **`purpose` (0018; structured options + `store_id`/`store_name`/
+  `store_location`/`purpose_other` in 0029)**,
   `notes`, audit (`created_by`, **`created_by_name`** 0023, timestamps,
   `deleted_at`).
 - **vehicles** — `id`, `vtd_no` (unique; the tracker/Device ID), `vehicle_id`
