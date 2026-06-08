@@ -156,12 +156,15 @@ export default async function DeploymentDetailPage({
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <InfoCard label="Deploy date" value={formatDate(d.deploy_date)} />
-            <InfoCard label="Due date" value={formatDate(d.due_date)} />
-            <InfoCard label="Weeks" value={String(d.weeks)} />
-            <InfoCard
-              label="Rate"
-              value={`${inr(d.rate_inr)}/wk`}
-            />
+            {d.billing_exempt ? (
+              <InfoCard label="Billing" value="3PL — deposit only (no rent)" />
+            ) : (
+              <>
+                <InfoCard label="Due date" value={formatDate(d.due_date)} />
+                <InfoCard label="Weeks" value={String(d.weeks)} />
+                <InfoCard label="Rate" value={`${inr(d.rate_inr)}/wk`} />
+              </>
+            )}
             <InfoCard label="Deposit required" value={inr(d.deposit_required_inr)} />
             <InfoCard label="Total due" value={inr(d.total_due)} />
             <InfoCard label="Total collected" value={inr(d.total_collected)} />

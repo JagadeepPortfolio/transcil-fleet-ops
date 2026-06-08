@@ -63,7 +63,7 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
   are tracked in the timeline but don't reduce the rent balance.
   `late_fee_collected` (0034) sums the txn-gated Late-fee PAYMENTs separately.
 - **deployments_enriched** — `d.*` + rider/vehicle/hub joins + computed
-  (rebuilt in 0021/0025/0031/0034/0035). **Money model (0025):**
+  (rebuilt in 0021/0025/0031/0034/0035/0038). **Money model (0025):**
   - `total_paid = rent paid + deposit_collected`
   - `total_collected = rent paid + deposit_collected + late_fee_collected` (0034;
     the "Total collected" card — all cash received). `total_paid`/`balance` stay
@@ -73,6 +73,11 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
     `due_date`; else PENDING.
   - `days_left`, `action` (LOCK_NOW/AT_RISK/CALL_TODAY/UPCOMING/OK) use IST
     `(CURRENT_DATE AT TIME ZONE 'Asia/Kolkata')`.
+  - **`billing_exempt` (0038, 3PL deposit-only):** exempt rows get `action='OK'`,
+    `days_left=NULL`, and never `OVERDUE` — so they stay out of all alerts.
+    `reports.ts` also excludes them from rent figures (Outstanding, overdue,
+    collection rate) but keeps them in utilization. Set when rider source=3PL;
+    such deployments store rate 0 / 1 week and collect only a ₹2,000 deposit.
   > Note: Postgres freezes `d.*` at view-creation, so **adding a deployments
   > column requires recreating this view** (see 0021/0025).
 

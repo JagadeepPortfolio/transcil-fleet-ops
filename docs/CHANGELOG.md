@@ -336,6 +336,30 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 23 — 3PL deposit-only + rider alternate number (2026-06-08)
+
+- **Migration 0037**: `riders.alt_phone` (optional 10-digit alternate number).
+  Added to New Rider (below Phone) and the rider detail page.
+- **Migration 0038**: `deployments.billing_exempt` (bool). `deployments_enriched`
+  recreated so exempt rows are guarded: `action='OK'` (never in alerts),
+  `days_left=NULL` (no term), and never `OVERDUE` by date.
+- **3PL rule** — when the selected rider's **Source = 3PL**, New Deployment goes
+  **deposit-only**: no weekly rent, a **fixed ₹2,000 deposit** (txn ID required),
+  no initial payment, `billing_exempt=true`. The form auto-switches on rider
+  selection; the **server re-derives 3PL from the rider's source** (source of
+  truth) and enforces rate 0 / 1 week / deposit 2000.
+- 3PL deployments **never show as due/overdue** and are **excluded from rent
+  reports** (Outstanding Balances, overdue counts, hub collection rate) — but
+  still count toward fleet **utilization** (they occupy a vehicle). Detail page
+  shows a "3PL — deposit only (no rent)" card.
+- New Deployment form refactored into a client component
+  (`new-deployment-form.tsx`) to react to rider source; the server action is
+  passed in as a prop.
+- Assumption: each 3PL driver is its own rider (Source=3PL); the one-active-
+  deployment-per-rider rule is unchanged.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

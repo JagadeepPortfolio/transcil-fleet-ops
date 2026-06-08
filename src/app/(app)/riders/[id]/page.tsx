@@ -72,6 +72,7 @@ export default async function RiderDetailPage({
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <InfoCard label="Alternate number" value={rider.alt_phone ?? "—"} />
         <InfoCard label="Current location" value={rider.current_location ?? "—"} />
         <InfoCard
           label="Purpose"

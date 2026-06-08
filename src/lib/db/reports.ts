@@ -99,9 +99,9 @@ export async function getMonthlySummary(
     0
   )
 
-  // Total due across all active deployments
+  // Total due across all active deployments (3PL is rent-exempt — excluded)
   const totalDue = deployments
-    .filter((d) => d.status === "ACTIVE")
+    .filter((d) => d.status === "ACTIVE" && !d.billing_exempt)
     .reduce((sum, d) => sum + (d.total_due ?? 0), 0)
 
   const collectionPct =
@@ -117,7 +117,7 @@ export async function getMonthlySummary(
     .reduce((sum, e) => sum + (Number(e.amount_inr) || 0), 0)
 
   const overdueCount = deployments.filter(
-    (d) => d.status === "ACTIVE" && d.pay_status === "OVERDUE"
+    (d) => d.status === "ACTIVE" && !d.billing_exempt && d.pay_status === "OVERDUE"
   ).length
 
   return {
@@ -159,7 +159,7 @@ export async function getOutstandingBalances(): Promise<OutstandingRow[]> {
   if (error) throw error
 
   return ((data ?? []) as unknown as DeploymentEnrichedRow[])
-    .filter((d) => (d.balance ?? 0) > 0)
+    .filter((d) => (d.balance ?? 0) > 0 && !d.billing_exempt)
     .map((d) => {
       const overdueDays =
         d.days_left != null && d.days_left < 0 ? Math.abs(d.days_left) : 0
@@ -246,8 +246,14 @@ export async function getHubPerformance(
   return hubs.map((hub) => {
     const hubDeployments = deployments.filter((d) => d.hub_id === hub.id)
     const active = hubDeployments.filter((d) => d.status === "ACTIVE")
-    const overdue = active.filter((d) => d.pay_status === "OVERDUE")
-    const totalDue = active.reduce((s, d) => s + (d.total_due ?? 0), 0)
+    const overdue = active.filter(
+      (d) => !d.billing_exempt && d.pay_status === "OVERDUE"
+    )
+    // 3PL is rent-exempt — excluded from due / collection rate (but still counts
+    // toward utilization since it occupies a vehicle).
+    const totalDue = active
+      .filter((d) => !d.billing_exempt)
+      .reduce((s, d) => s + (d.total_due ?? 0), 0)
     const collected = hubPayments.get(hub.id) ?? 0
 
     const daysLeftValues = active

@@ -14,20 +14,32 @@ import { paymentSchema, depositSchema } from "@/lib/validation/activity"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
 import { Card } from "@/components/ui/card"
-import {
-  SelectField,
-  TextareaField,
-  FormError,
-} from "@/components/ui/form-fields"
-import { RentalFields } from "./rental-fields"
-import { AccessoryFields } from "./accessory-fields"
+import { FormError } from "@/components/ui/form-fields"
+import { NewDeploymentForm } from "./new-deployment-form"
 
 export const metadata = {
   title: "New deployment · Transcil Fleet Ops",
 }
 
+const THREE_PL_DEPOSIT = 2000
+
 async function createDeployment(formData: FormData) {
   "use server"
+
+  const supabase = createClient()
+
+  // 3PL is derived from the rider's Source (source of truth, not the client):
+  // a 3PL deployment has no rent — deposit only — and is billing-exempt.
+  const riderId = formData.get("rider_id") as string | null
+  let is3PL = false
+  if (riderId) {
+    const { data: r } = await supabase
+      .from("riders")
+      .select("source")
+      .eq("id", riderId)
+      .maybeSingle()
+    is3PL = (r as { source?: string } | null)?.source === "3PL"
+  }
 
   const parsed = deploymentCreateSchema.safeParse({
     rider_id: formData.get("rider_id"),
@@ -53,30 +65,35 @@ async function createDeployment(formData: FormData) {
 
   const input = parsed.data
 
-  // Initial payment — always recorded with the deployment.
-  const payParsed = paymentSchema.safeParse({
-    event_date: input.deploy_date,
-    amount_inr: formData.get("payment_amount_inr"),
-    payment_mode: formData.get("payment_mode"),
-    payment_category: "Billing Cycle",
-    week_number: formData.get("payment_week_number") ?? "",
-    transaction_id: formData.get("payment_txn_id") ?? "",
-  })
-  if (!payParsed.success) {
-    const msg = payParsed.error.issues.map((i) => i.message).join("; ")
-    redirect(
-      `/deployments/new?error=${encodeURIComponent(`Initial payment — ${msg}`)}`
-    )
+  // Initial payment — always recorded, EXCEPT for 3PL (no rent).
+  let payParsed: ReturnType<typeof paymentSchema.safeParse> | null = null
+  if (!is3PL) {
+    payParsed = paymentSchema.safeParse({
+      event_date: input.deploy_date,
+      amount_inr: formData.get("payment_amount_inr"),
+      payment_mode: formData.get("payment_mode"),
+      payment_category: "Billing Cycle",
+      week_number: formData.get("payment_week_number") ?? "",
+      transaction_id: formData.get("payment_txn_id") ?? "",
+    })
+    if (!payParsed.success) {
+      const msg = payParsed.error.issues.map((i) => i.message).join("; ")
+      redirect(
+        `/deployments/new?error=${encodeURIComponent(`Initial payment — ${msg}`)}`
+      )
+    }
   }
 
-  // Deposit — only when a new deposit is needed and a non-zero amount is set.
-  const wantDeposit =
-    input.new_deposit_needed && input.deposit_required_inr > 0
+  // Deposit. 3PL always collects the fixed ₹2,000 deposit; otherwise it's the
+  // requested amount when "new deposit needed" is set.
+  const depositRequired = is3PL ? THREE_PL_DEPOSIT : input.deposit_required_inr
+  const newDepositNeeded = is3PL ? true : input.new_deposit_needed
+  const wantDeposit = newDepositNeeded && depositRequired > 0
   let depParsed: ReturnType<typeof depositSchema.safeParse> | null = null
   if (wantDeposit) {
     depParsed = depositSchema.safeParse({
       event_date: input.deploy_date,
-      amount_inr: input.deposit_required_inr,
+      amount_inr: depositRequired,
       payment_mode: formData.get("deposit_mode"),
       transaction_id: formData.get("deposit_txn_id") ?? "",
     })
@@ -88,7 +105,6 @@ async function createDeployment(formData: FormData) {
     }
   }
 
-  const supabase = createClient()
   const { data: userRes } = await supabase.auth.getUser()
   const userId = userRes.user?.id
 
@@ -98,12 +114,13 @@ async function createDeployment(formData: FormData) {
       rider_id: input.rider_id,
       vehicle_id: input.vehicle_id,
       hub_id: input.hub_id,
-      rental_type: input.rental_type,
+      rental_type: is3PL ? "Weekly" : input.rental_type,
       deploy_date: input.deploy_date,
-      weeks: input.weeks,
-      rate_inr: input.rate_inr,
-      deposit_required_inr: input.deposit_required_inr,
-      new_deposit_needed: input.new_deposit_needed,
+      weeks: is3PL ? 1 : input.weeks,
+      rate_inr: is3PL ? 0 : input.rate_inr,
+      deposit_required_inr: depositRequired,
+      new_deposit_needed: newDepositNeeded,
+      billing_exempt: is3PL,
       battery_type: input.battery_type,
       battery_number: input.battery_number ?? null,
       battery_number_2: input.battery_number_2 ?? null,
@@ -129,7 +146,7 @@ async function createDeployment(formData: FormData) {
   const deploymentId = (row as { id: string }).id
 
   // Record the collection events through the single write path. Deposit first
-  // (start-of-contract ordering), then the first payment.
+  // (start-of-contract ordering), then the first payment (skipped for 3PL).
   let warn: string | null = null
   try {
     if (depParsed && depParsed.success) {
@@ -141,15 +158,17 @@ async function createDeployment(formData: FormData) {
         transactionId: depParsed.data.transaction_id,
       })
     }
-    await logActivityEvent(deploymentId, {
-      type: "PAYMENT",
-      eventDate: payParsed.data.event_date,
-      amountInr: payParsed.data.amount_inr,
-      paymentMode: payParsed.data.payment_mode,
-      paymentCategory: payParsed.data.payment_category,
-      weekNumber: payParsed.data.week_number,
-      transactionId: payParsed.data.transaction_id,
-    })
+    if (payParsed && payParsed.success) {
+      await logActivityEvent(deploymentId, {
+        type: "PAYMENT",
+        eventDate: payParsed.data.event_date,
+        amountInr: payParsed.data.amount_inr,
+        paymentMode: payParsed.data.payment_mode,
+        paymentCategory: payParsed.data.payment_category,
+        weekNumber: payParsed.data.week_number,
+        transactionId: payParsed.data.transaction_id,
+      })
+    }
   } catch {
     warn =
       "Deployment created, but recording the initial payment/deposit failed — add it from the timeline below."
@@ -198,67 +217,15 @@ export default async function NewDeploymentPage({
       <FormError message={searchParams.error} />
 
       <Card>
-        <form action={createDeployment} className="space-y-5 p-6">
-          <SelectField
-            label="Rider"
-            name="rider_id"
-            required
-            defaultValue={searchParams.rider}
-          >
-            <option value="">Select a rider…</option>
-            {riders.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name} — {r.phone}{r.app_rider_id ? ` (${r.app_rider_id})` : ""}
-              </option>
-            ))}
-          </SelectField>
-
-          <SelectField label="Vehicle" name="vehicle_id" required>
-            <option value="">Select a vehicle…</option>
-            {vehicles.length === 0 ? (
-              <option disabled value="">
-                No vehicles available — add some under Admin → Vehicles
-              </option>
-            ) : (
-              vehicles.map((v: Record<string, unknown>) => (
-                <option key={v.id as string} value={v.id as string}>
-                  {(v.vtd_no as string) ?? ""}
-                  {v.vehicle_id ? ` · ${v.vehicle_id as string}` : ""}
-                  {v.colour ? ` · ${v.colour as string}` : ""}
-                </option>
-              ))
-            )}
-          </SelectField>
-
-          <SelectField
-            label="Hub"
-            name="hub_id"
-            required
-            defaultValue={defaultHubId ? String(defaultHubId) : ""}
-          >
-            <option value="">Select a hub…</option>
-            {hubs.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.code} — {h.name}
-              </option>
-            ))}
-          </SelectField>
-
-          <AccessoryFields />
-
-          <RentalFields today={today} />
-
-          <TextareaField label="Notes" name="notes" />
-
-          <div className="flex items-center justify-end gap-3 border-t pt-5">
-            <Button variant="ghost" render={<Link href="/deployments" />}>
-              Cancel
-            </Button>
-            <Button type="submit" size="lg">
-              Create deployment
-            </Button>
-          </div>
-        </form>
+        <NewDeploymentForm
+          riders={riders}
+          vehicles={vehicles as Array<Record<string, unknown>>}
+          hubs={hubs as Array<{ id: number; code: string; name: string }>}
+          today={today}
+          defaultHubId={defaultHubId as number | undefined}
+          defaultRider={searchParams.rider}
+          action={createDeployment}
+        />
       </Card>
     </div>
   )

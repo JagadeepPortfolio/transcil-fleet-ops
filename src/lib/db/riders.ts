@@ -6,6 +6,7 @@ export type RiderRow = {
   app_rider_id: string | null
   name: string
   phone: string
+  alt_phone: string | null
   address: string | null
   id_proof_url: string | null
   photo_url: string | null
@@ -65,7 +66,7 @@ export async function listRidersWithoutActiveDeployment() {
   const [ridersRes, activeRes] = await Promise.all([
     supabase
       .from("riders")
-      .select("id, name, phone, app_rider_id")
+      .select("id, name, phone, app_rider_id, source")
       .is("deleted_at", null)
       .order("name", { ascending: true }),
     supabase
@@ -86,6 +87,7 @@ export async function listRidersWithoutActiveDeployment() {
     name: string
     phone: string
     app_rider_id: string | null
+    source: string | null
   }>
 }
 

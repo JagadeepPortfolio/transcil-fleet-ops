@@ -15,6 +15,7 @@ export type DeploymentEnrichedRow = {
   battery_number: string | null
   battery_number_2: string | null
   charger_cable_number: string | null
+  billing_exempt: boolean
   deposit_refund_status: string
   status: "ACTIVE" | "RETURNED" | "LOCKED" | "CANCELLED"
   call_status: string | null

@@ -33,6 +33,7 @@ async function createRider(formData: FormData) {
   const parsed = riderCreateSchema.safeParse({
     name: formData.get("name"),
     phone: formData.get("phone"),
+    alt_phone: formData.get("alt_phone") ?? "",
     source: formData.get("source"),
     app_rider_id: formData.get("app_rider_id") ?? "",
     current_location: formData.get("current_location") ?? "",
@@ -100,6 +101,7 @@ async function createRider(formData: FormData) {
     id: riderId,
     name: input.name,
     phone: input.phone,
+    alt_phone: input.alt_phone ?? null,
     source: input.source,
     app_rider_id: input.app_rider_id || null,
     current_location: input.current_location,
@@ -173,6 +175,15 @@ export default async function NewRiderPage({
             label="Phone (10 digits)"
             name="phone"
             required
+            inputProps={{
+              pattern: "[0-9]{10}",
+              inputMode: "numeric",
+              placeholder: "9876543210",
+            }}
+          />
+          <Field
+            label="Alternate number (optional)"
+            name="alt_phone"
             inputProps={{
               pattern: "[0-9]{10}",
               inputMode: "numeric",

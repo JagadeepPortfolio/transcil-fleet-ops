@@ -31,6 +31,13 @@ export const riderCreateSchema = z.object({
     .string()
     .trim()
     .regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits"),
+  alt_phone: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{10}$/, "Alternate number must be exactly 10 digits")
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined)),
   source: z.enum(riderSources),
   app_rider_id: z.string().trim().max(50).optional().or(z.literal("")),
   current_location: z
