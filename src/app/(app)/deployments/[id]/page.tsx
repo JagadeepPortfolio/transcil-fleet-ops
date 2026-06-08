@@ -103,7 +103,9 @@ export default async function DeploymentDetailPage({
                   }))}
                   isCmd={isCmd}
                   deployDate={d.deploy_date}
+                  batteryType={d.battery_type}
                   issuedBattery={d.battery_number}
+                  issuedBattery2={d.battery_number_2}
                   issuedCharger={d.charger_cable_number}
                   dueDate={d.due_date}
                   dailyLateRate={dailyLateRate}
@@ -174,7 +176,16 @@ export default async function DeploymentDetailPage({
               value={inr(d.balance)}
               accent={d.balance != null && d.balance > 0}
             />
-            <InfoCard label="Battery no." value={d.battery_number ?? "—"} />
+            <InfoCard label="Battery type" value={d.battery_type ?? "—"} />
+            {d.battery_type !== "Fixed" ? (
+              <InfoCard
+                label={d.battery_number_2 ? "Battery no. 1" : "Battery no."}
+                value={d.battery_number ?? "—"}
+              />
+            ) : null}
+            {d.battery_number_2 ? (
+              <InfoCard label="Battery no. 2" value={d.battery_number_2} />
+            ) : null}
             <InfoCard label="Charger cable no." value={d.charger_cable_number ?? "—"} />
           </div>
 
@@ -257,10 +268,14 @@ export default async function DeploymentDetailPage({
                               e.new_value as string
                             )}${e.reason ? ` · ${e.reason as string}` : ""}`
                           ) : e.event_type === "RETURN" &&
-                            (e.battery_number || e.charger_cable_number) ? (
+                            (e.battery_number || e.battery_number_2 || e.charger_cable_number) ? (
                             <span>
-                              Battery {(e.battery_number as string) ?? "—"} ·
-                              Charger {(e.charger_cable_number as string) ?? "—"}
+                              Battery {(e.battery_number as string) ?? "—"}
+                              {e.battery_number_2
+                                ? ` / ${e.battery_number_2 as string}`
+                                : ""}{" "}
+                              · Charger{" "}
+                              {(e.charger_cable_number as string) ?? "—"}
                               {e.reason ? ` · ${e.reason as string}` : ""}
                             </span>
                           ) : (

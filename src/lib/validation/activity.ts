@@ -173,23 +173,41 @@ export const RETURN_REASONS_FULL = [
   "Other",
 ] as const
 
-export const returnSchema = z.object({
-  event_date: dateSchema,
-  reason: z.enum(RETURN_REASONS_FULL, {
-    message: "Pick a return reason",
-  }),
-  battery_number: z
-    .string()
-    .trim()
-    .min(1, "Returned battery number is required")
-    .max(60),
-  charger_cable_number: z
-    .string()
-    .trim()
-    .min(1, "Returned charger cable number is required")
-    .max(60),
-  notes: notesSchema,
-})
+export const returnSchema = z
+  .object({
+    event_date: dateSchema,
+    reason: z.enum(RETURN_REASONS_FULL, {
+      message: "Pick a return reason",
+    }),
+    // Carries the deployment's battery_type so we know how many returned battery
+    // numbers to require. Null/legacy deployments are treated as Single.
+    battery_type: optionalText(10),
+    battery_number: optionalText(60),
+    battery_number_2: optionalText(60),
+    charger_cable_number: z
+      .string()
+      .trim()
+      .min(1, "Returned charger cable number is required")
+      .max(60),
+    notes: notesSchema,
+  })
+  .superRefine((data, ctx) => {
+    const t = data.battery_type === "Fixed" || data.battery_type === "Dual" ? data.battery_type : "Single"
+    if (t !== "Fixed" && !data.battery_number) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["battery_number"],
+        message: "Returned battery number is required",
+      })
+    }
+    if (t === "Dual" && !data.battery_number_2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["battery_number_2"],
+        message: "Second returned battery number is required",
+      })
+    }
+  })
 export type ReturnInput = z.infer<typeof returnSchema>
 
 /**

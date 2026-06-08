@@ -15,12 +15,12 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
 import { Card } from "@/components/ui/card"
 import {
-  Field,
   SelectField,
   TextareaField,
   FormError,
 } from "@/components/ui/form-fields"
 import { RentalFields } from "./rental-fields"
+import { AccessoryFields } from "./accessory-fields"
 
 export const metadata = {
   title: "New deployment · Transcil Fleet Ops",
@@ -39,7 +39,9 @@ async function createDeployment(formData: FormData) {
     rate_inr: formData.get("rate_inr"),
     deposit_required_inr: formData.get("deposit_required_inr") ?? 0,
     new_deposit_needed: formData.get("new_deposit_needed") === "on",
+    battery_type: formData.get("battery_type"),
     battery_number: formData.get("battery_number") ?? "",
+    battery_number_2: formData.get("battery_number_2") ?? "",
     charger_cable_number: formData.get("charger_cable_number") ?? "",
     notes: formData.get("notes") ?? "",
   })
@@ -102,7 +104,9 @@ async function createDeployment(formData: FormData) {
       rate_inr: input.rate_inr,
       deposit_required_inr: input.deposit_required_inr,
       new_deposit_needed: input.new_deposit_needed,
-      battery_number: input.battery_number,
+      battery_type: input.battery_type,
+      battery_number: input.battery_number ?? null,
+      battery_number_2: input.battery_number_2 ?? null,
       charger_cable_number: input.charger_cable_number,
       notes: input.notes || null,
       status: "ACTIVE",
@@ -240,19 +244,7 @@ export default async function NewDeploymentPage({
             ))}
           </SelectField>
 
-          <div className="space-y-1.5">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Accessories handed over
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Battery number" name="battery_number" required />
-              <Field
-                label="Charger cable number"
-                name="charger_cable_number"
-                required
-              />
-            </div>
-          </div>
+          <AccessoryFields />
 
           <RentalFields today={today} />
 

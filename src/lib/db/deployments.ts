@@ -11,7 +11,9 @@ export type DeploymentEnrichedRow = {
   rate_inr: number
   deposit_required_inr: number
   new_deposit_needed: boolean
+  battery_type: string | null
   battery_number: string | null
+  battery_number_2: string | null
   charger_cable_number: string | null
   deposit_refund_status: string
   status: "ACTIVE" | "RETURNED" | "LOCKED" | "CANCELLED"

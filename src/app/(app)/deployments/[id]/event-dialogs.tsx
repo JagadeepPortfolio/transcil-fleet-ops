@@ -61,7 +61,9 @@ export function EventDialogs({
   availableVehicles,
   isCmd = false,
   deployDate,
+  batteryType,
   issuedBattery,
+  issuedBattery2,
   issuedCharger,
   dueDate,
   dailyLateRate = 0,
@@ -76,7 +78,9 @@ export function EventDialogs({
   /** Current deploy_date (YYYY-MM-DD), for the edit-date dialog. */
   deployDate?: string
   /** Issued accessory numbers, shown as a reference on the Return dialog. */
+  batteryType?: string | null
   issuedBattery?: string | null
+  issuedBattery2?: string | null
   issuedCharger?: string | null
   /** Return-balance inputs. */
   dueDate?: string
@@ -161,7 +165,9 @@ export function EventDialogs({
       />
       <ReturnDialog
         deploymentId={deploymentId}
+        batteryType={batteryType}
         issuedBattery={issuedBattery}
+        issuedBattery2={issuedBattery2}
         issuedCharger={issuedCharger}
         dueDate={dueDate}
         dailyLateRate={dailyLateRate}
@@ -737,7 +743,9 @@ function ExtensionDialog({
 
 function ReturnDialog({
   deploymentId,
+  batteryType,
   issuedBattery,
+  issuedBattery2,
   issuedCharger,
   dueDate,
   dailyLateRate = 0,
@@ -746,7 +754,9 @@ function ReturnDialog({
   onClose,
 }: {
   deploymentId: string
+  batteryType?: string | null
   issuedBattery?: string | null
+  issuedBattery2?: string | null
   issuedCharger?: string | null
   dueDate?: string
   dailyLateRate?: number
@@ -754,6 +764,9 @@ function ReturnDialog({
   open: boolean
   onClose: () => void
 }) {
+  // Null/legacy deployments are treated as Single (one battery number).
+  const isFixed = batteryType === "Fixed"
+  const isDual = batteryType === "Dual"
   const [state, formAction] = useFormState(
     returnVehicleAction.bind(null, deploymentId),
     INITIAL
@@ -829,16 +842,42 @@ function ReturnDialog({
             </option>
           ))}
         </SelectField>
+        {/* Tells the server how many returned battery numbers to require. */}
+        <input type="hidden" name="battery_type" value={batteryType ?? "Single"} />
         <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          Issued at deployment — Battery: <span className="font-mono">{issuedBattery ?? "—"}</span> · Charger: <span className="font-mono">{issuedCharger ?? "—"}</span>
+          Issued at deployment — Battery type:{" "}
+          <span className="font-mono">{batteryType ?? "—"}</span>
+          {!isFixed ? (
+            <>
+              {" "}· Battery{isDual ? " 1" : ""}:{" "}
+              <span className="font-mono">{issuedBattery ?? "—"}</span>
+            </>
+          ) : null}
+          {isDual ? (
+            <>
+              {" "}· Battery 2:{" "}
+              <span className="font-mono">{issuedBattery2 ?? "—"}</span>
+            </>
+          ) : null}{" "}
+          · Charger: <span className="font-mono">{issuedCharger ?? "—"}</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field
-            label="Returned battery no."
-            name="battery_number"
-            required
-            hint="For records"
-          />
+          {!isFixed ? (
+            <Field
+              label={isDual ? "Returned battery no. 1" : "Returned battery no."}
+              name="battery_number"
+              required
+              hint="For records"
+            />
+          ) : null}
+          {isDual ? (
+            <Field
+              label="Returned battery no. 2"
+              name="battery_number_2"
+              required
+              hint="For records"
+            />
+          ) : null}
           <Field
             label="Returned charger cable no."
             name="charger_cable_number"

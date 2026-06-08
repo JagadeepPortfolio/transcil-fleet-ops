@@ -319,6 +319,23 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 22 — Battery type on new deployment (2026-06-08)
+
+- **Migration 0035**: `deployments.battery_type` (`Fixed` | `Single` | `Dual`)
+  + `battery_number_2`. `deployments_enriched` recreated so `d.*` exposes them.
+- **New Deployment**: a **Battery type** dropdown above the accessories.
+  Fixed → no battery number; Single → one battery number; Dual → two battery
+  numbers. Charger cable number stays required. Conditional validation enforced
+  in `deploymentCreateSchema` (superRefine). Detail page shows battery type and
+  both numbers when present.
+- **Migration 0036**: `activity_log.battery_number_2`. The **Return** dialog now
+  adapts to the deployment's battery type — Fixed asks for no battery number,
+  Single one, Dual two (with the issued values shown for reference). Conditional
+  validation in `returnSchema` (a hidden `battery_type` carries the type).
+  Timeline shows both returned battery numbers for dual.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

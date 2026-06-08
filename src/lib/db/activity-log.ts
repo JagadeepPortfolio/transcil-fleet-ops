@@ -14,7 +14,8 @@ import { createClient } from "@/lib/supabase/server"
  *   REPLACEMENT      vehicle_id → new vehicle
  *   EXTENSION        weeks += extra_weeks (due_date auto via GENERATED col)
  *   RETURN           status='RETURNED', return_date, return_reason; also stores
- *                    returned battery_number / charger_cable_number for verification
+ *                    returned battery_number (+ battery_number_2 for dual) /
+ *                    charger_cable_number for verification
  *   REMINDER_CALL    call_status, call_notes
  *   LOCK             lock_status='Locked', lock_date
  *   UNLOCK           lock_status='Unlocked'
@@ -78,6 +79,7 @@ export type ActivityEventInput =
       eventDate: string
       reason?: string
       batteryNumber?: string
+      batteryNumber2?: string
       chargerCableNumber?: string
       notes?: string
     }
@@ -144,6 +146,7 @@ export async function logActivityEvent(
     case "RETURN":
       insertPayload.reason = event.reason ?? null
       insertPayload.battery_number = event.batteryNumber ?? null
+      insertPayload.battery_number_2 = event.batteryNumber2 ?? null
       insertPayload.charger_cable_number = event.chargerCableNumber ?? null
       break
     case "REMINDER_CALL":

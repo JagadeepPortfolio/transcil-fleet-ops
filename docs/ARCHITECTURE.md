@@ -63,7 +63,7 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
   are tracked in the timeline but don't reduce the rent balance.
   `late_fee_collected` (0034) sums the txn-gated Late-fee PAYMENTs separately.
 - **deployments_enriched** — `d.*` + rider/vehicle/hub joins + computed
-  (rebuilt in 0021/0025/0031/0034). **Money model (0025):**
+  (rebuilt in 0021/0025/0031/0034/0035). **Money model (0025):**
   - `total_paid = rent paid + deposit_collected`
   - `total_collected = rent paid + deposit_collected + late_fee_collected` (0034;
     the "Total collected" card — all cash received). `total_paid`/`balance` stay
@@ -91,6 +91,9 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
   Mobile App** *(0024)*
 - Payment category (CHECK on `activity_log.payment_category`, nullable):
   **Billing Cycle, Late fee** *(0033)* — null/legacy rows count as rent
+- Battery type (CHECK on `deployments.battery_type`, nullable): **Fixed, Single,
+  Dual** *(0035)* — Single needs `battery_number`, Dual needs `battery_number` +
+  `battery_number_2`, Fixed needs none (enforced in `deploymentCreateSchema`)
 
 ## Money model
 

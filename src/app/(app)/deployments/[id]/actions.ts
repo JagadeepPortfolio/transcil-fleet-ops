@@ -272,6 +272,7 @@ export async function returnVehicleAction(
       eventDate: parsed.data.event_date,
       reason: parsed.data.reason,
       batteryNumber: parsed.data.battery_number,
+      batteryNumber2: parsed.data.battery_number_2,
       chargerCableNumber: parsed.data.charger_cable_number,
       notes: parsed.data.notes,
     })
