@@ -390,6 +390,24 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 26 — Extend dialog: pay-in-place + due-date clarity; deposit disable (2026-06-11)
+
+- **Record / Refund deposit disabled** — both options hidden from the deployment
+  action bar (`DEPOSITS_ENABLED` flag) and the server actions reject with a
+  "disabled" message. New Deployment initial deposit (incl. 3PL) unaffected.
+  One-line flip to re-enable.
+- **Extend dialog** now shows a **Due date → New due date** preview. (No logic
+  change: `due_date` is generated as `deploy_date + total weeks × 7`, so an
+  extension always extends from the current due date by the selected weeks — the
+  event date never shifts it.)
+- **Collect payment now** (checkbox, default on) inside the Extend dialog —
+  amount **pre-filled to weeks × rate**, with payment mode / UTR / week#.
+  Submitting logs the EXTENSION then the PAYMENT (Billing Cycle) in one step;
+  unchecking just extends. `extendDeploymentAction` parses the optional payment
+  via `paymentSchema`. No migration.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

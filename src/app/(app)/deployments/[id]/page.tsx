@@ -112,6 +112,7 @@ export default async function DeploymentDetailPage({
                   dueDate={d.due_date}
                   dailyLateRate={dailyLateRate}
                   rentOutstanding={rentOutstanding}
+                  rateInr={d.rate_inr}
                 />
               </Card>
             </div>

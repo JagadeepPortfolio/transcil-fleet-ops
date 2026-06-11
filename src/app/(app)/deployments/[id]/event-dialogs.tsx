@@ -7,6 +7,7 @@ import { ArrowLeftRight, CalendarCog, CalendarPlus, CreditCard, Landmark, Lock, 
 
 import { Button } from "@/components/ui/button"
 import {
+  CheckboxField,
   Field,
   FormError,
   SelectField,
@@ -58,6 +59,12 @@ function today() {
   return new Date(d.getTime() - tz).toISOString().slice(0, 10)
 }
 
+function addDaysISO(iso: string, days: number): string {
+  const d = new Date(iso + "T00:00:00Z")
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 export function EventDialogs({
   deploymentId,
   deploymentStatus,
@@ -73,6 +80,7 @@ export function EventDialogs({
   dueDate,
   dailyLateRate = 0,
   rentOutstanding = 0,
+  rateInr = 0,
 }: {
   deploymentId: string
   deploymentStatus: string
@@ -92,6 +100,7 @@ export function EventDialogs({
   dueDate?: string
   dailyLateRate?: number
   rentOutstanding?: number
+  rateInr?: number
 }) {
   const [open, setOpen] = React.useState<DialogKey>(null)
   const close = React.useCallback(() => setOpen(null), [])
@@ -175,6 +184,8 @@ export function EventDialogs({
       />
       <ExtensionDialog
         deploymentId={deploymentId}
+        rateInr={rateInr}
+        dueDate={dueDate}
         open={open === "extend"}
         onClose={close}
       />
@@ -714,10 +725,14 @@ function ReplacementDialog({
 
 function ExtensionDialog({
   deploymentId,
+  rateInr = 0,
+  dueDate,
   open,
   onClose,
 }: {
   deploymentId: string
+  rateInr?: number
+  dueDate?: string
   open: boolean
   onClose: () => void
 }) {
@@ -734,12 +749,21 @@ function ExtensionDialog({
   const n = Math.max(0, parseInt(count || "0", 10) || 0)
   const extraWeeks = isMonthly ? n * 4 : n
 
+  const [collect, setCollect] = React.useState(true)
+  const [amountEdited, setAmountEdited] = React.useState(false)
+  const [amount, setAmount] = React.useState("")
+  const computed = extraWeeks * rateInr
+  const amountValue = amountEdited ? amount : computed ? String(computed) : ""
+
+  const newDue = dueDate && extraWeeks > 0 ? addDaysISO(dueDate, extraWeeks * 7) : null
+  const inr = (v: number) => `₹${v.toLocaleString("en-IN")}`
+
   return (
     <DialogShell
       open={open}
       onClose={onClose}
       title="Extend deployment"
-      description="Extend by weeks or months (1 month = 4 weeks). The due date and amount due recalculate automatically; collect the extra rent via Record Payment."
+      description="Extend by weeks or months (1 month = 4 weeks). The due date extends from the current due date; collect the extra rent right here."
     >
       <form action={formAction} className="space-y-4">
         <FormError message={state.error} />
@@ -788,6 +812,77 @@ function ExtensionDialog({
         />
         {/* The server reads extra_weeks; monthly is converted to weeks here. */}
         <input type="hidden" name="extra_weeks" value={String(extraWeeks)} />
+
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Due date{" "}
+          <span className="font-mono">{dueDate ?? "—"}</span>
+          {newDue ? (
+            <>
+              {" → "}
+              <span className="font-mono font-semibold text-foreground">{newDue}</span>{" "}
+              (+{extraWeeks} wk{extraWeeks === 1 ? "" : "s"})
+            </>
+          ) : null}
+          {computed ? <> · extra rent {inr(computed)}</> : null}
+        </div>
+
+        <fieldset className="space-y-4 rounded-lg border bg-muted/30 p-4">
+          <CheckboxField
+            label="Collect payment now"
+            name="collect_payment"
+            checked={collect}
+            onChange={(e) => setCollect(e.target.checked)}
+            hint="Record the extra rent here — no need to open Record Payment separately."
+          />
+          {collect ? (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Field
+                  label="Amount (₹)"
+                  name="amount_inr"
+                  type="number"
+                  required
+                  inputProps={{
+                    min: 0,
+                    step: "0.01",
+                    inputMode: "decimal",
+                    value: amountValue,
+                    onChange: (e) => {
+                      setAmountEdited(true)
+                      setAmount(e.target.value)
+                    },
+                  }}
+                />
+                <SelectField label="Payment mode" name="payment_mode" required>
+                  <option value="" disabled>
+                    Choose…
+                  </option>
+                  {PAYMENT_MODES.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </SelectField>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field
+                  label="Week #"
+                  name="week_number"
+                  type="number"
+                  inputProps={{ min: 1, max: 52, step: 1 }}
+                  hint="Which week this covers (optional)."
+                />
+                <Field
+                  label="Transaction ID (UTR)"
+                  name="transaction_id"
+                  required
+                  hint="UPI / app reference number."
+                />
+              </div>
+            </>
+          ) : null}
+        </fieldset>
+
         <TextareaField
           label="Notes"
           name="notes"

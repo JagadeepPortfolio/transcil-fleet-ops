@@ -252,6 +252,23 @@ export async function extendDeploymentAction(
   const parsed = extensionSchema.safeParse(fd(formData))
   if (!parsed.success) return { ok: false, error: fieldErrors(parsed) }
 
+  // Optionally collect the extra rent in the same step.
+  const collect = formData.get("collect_payment") === "on"
+  let payParsed: ReturnType<typeof paymentSchema.safeParse> | null = null
+  if (collect) {
+    payParsed = paymentSchema.safeParse({
+      event_date: parsed.data.event_date,
+      amount_inr: formData.get("amount_inr"),
+      payment_mode: formData.get("payment_mode"),
+      payment_category: "Billing Cycle",
+      week_number: formData.get("week_number") ?? "",
+      transaction_id: formData.get("transaction_id") ?? "",
+    })
+    if (!payParsed.success) {
+      return { ok: false, error: `Payment — ${fieldErrors(payParsed)}` }
+    }
+  }
+
   try {
     await logActivityEvent(deploymentId, {
       type: "EXTENSION",
@@ -259,6 +276,17 @@ export async function extendDeploymentAction(
       extraWeeks: parsed.data.extra_weeks,
       notes: parsed.data.notes,
     })
+    if (payParsed && payParsed.success) {
+      await logActivityEvent(deploymentId, {
+        type: "PAYMENT",
+        eventDate: payParsed.data.event_date,
+        amountInr: payParsed.data.amount_inr,
+        paymentMode: payParsed.data.payment_mode,
+        paymentCategory: payParsed.data.payment_category,
+        weekNumber: payParsed.data.week_number,
+        transactionId: payParsed.data.transaction_id,
+      })
+    }
   } catch (e) {
     return { ok: false, error: (e as Error).message }
   }
