@@ -18,6 +18,11 @@ import {
   deployDateEditSchema,
 } from "@/lib/validation/activity"
 
+// Temporarily disabled — Record/Refund deposit are turned off (UI buttons are
+// hidden too). Flip to true to restore. Typed boolean so the guarded code below
+// stays reachable for the typechecker.
+const DEPOSITS_ENABLED: boolean = false
+
 /**
  * Deployment event Server Actions.
  *
@@ -79,6 +84,8 @@ export async function recordDepositAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  if (!DEPOSITS_ENABLED) return { ok: false, error: "Recording deposits is currently disabled." }
+
   const parsed = depositSchema.safeParse(fd(formData))
   if (!parsed.success) return { ok: false, error: fieldErrors(parsed) }
 
@@ -105,6 +112,8 @@ export async function refundDepositAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  if (!DEPOSITS_ENABLED) return { ok: false, error: "Refunding deposits is currently disabled." }
+
   const parsed = depositRefundSchema.safeParse(fd(formData))
   if (!parsed.success) return { ok: false, error: fieldErrors(parsed) }
 

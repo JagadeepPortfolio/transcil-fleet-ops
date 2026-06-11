@@ -47,6 +47,10 @@ export type AvailableVehicle = { id: string; vtd_no: string; ec: string | null; 
 
 const INITIAL: ActionState = { ok: false, error: null }
 
+// Temporarily disabled — Record/Refund deposit are hidden from the action bar.
+// Flip to true to restore (and re-enable the guards in actions.ts).
+const DEPOSITS_ENABLED = false
+
 function today() {
   // ISO date in local time — matches the date inputs that save YYYY-MM-DD
   const d = new Date()
@@ -98,12 +102,16 @@ export function EventDialogs({
         <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("payment")}>
           <CreditCard /> Record payment
         </Button>
-        <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("deposit")}>
-          <Landmark /> Record deposit
-        </Button>
-        <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("refund")}>
-          <Undo2 /> Refund deposit
-        </Button>
+        {DEPOSITS_ENABLED ? (
+          <>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("deposit")}>
+              <Landmark /> Record deposit
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("refund")}>
+              <Undo2 /> Refund deposit
+            </Button>
+          </>
+        ) : null}
         <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("call")}>
           <PhoneCall /> Log reminder call
         </Button>
