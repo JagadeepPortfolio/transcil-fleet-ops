@@ -11,7 +11,8 @@ import { createClient } from "@/lib/supabase/server"
  *   PAYMENT          none (computed via deployments_enriched view)
  *   DEPOSIT          none (computed via view)
  *   DEPOSIT_REFUND   deposit_refund_status → 'Refunded' / 'Carried Forward'
- *   REPLACEMENT      vehicle_id → new vehicle
+ *   REPLACEMENT      vehicle_id → new vehicle; optionally battery_number /
+ *                    battery_number_2 / charger_cable_number when "Change" picked
  *   EXTENSION        weeks += extra_weeks (due_date auto via GENERATED col)
  *   RETURN           status='RETURNED', return_date, return_reason; also stores
  *                    returned battery_number (+ battery_number_2 for dual) /
@@ -66,6 +67,11 @@ export type ActivityEventInput =
       oldVtd: string
       newVtd: string
       reason?: string
+      // When the new vehicle's battery/charger differ, these carry the new
+      // values; they patch the deployment and are recorded for the audit trail.
+      batteryNumber?: string
+      batteryNumber2?: string
+      chargerCableNumber?: string
       notes?: string
     }
   | {
@@ -139,6 +145,9 @@ export async function logActivityEvent(
       insertPayload.old_vtd = event.oldVtd
       insertPayload.new_vtd = event.newVtd
       insertPayload.reason = event.reason ?? null
+      if (event.batteryNumber !== undefined) insertPayload.battery_number = event.batteryNumber ?? null
+      if (event.batteryNumber2 !== undefined) insertPayload.battery_number_2 = event.batteryNumber2 ?? null
+      if (event.chargerCableNumber !== undefined) insertPayload.charger_cable_number = event.chargerCableNumber ?? null
       break
     case "EXTENSION":
       insertPayload.extra_weeks = event.extraWeeks
@@ -175,6 +184,10 @@ export async function logActivityEvent(
       break
     case "REPLACEMENT":
       patch.vehicle_id = event.newVehicleId
+      // Update battery/charger only when new values were provided ("Change").
+      if (event.batteryNumber !== undefined) patch.battery_number = event.batteryNumber ?? null
+      if (event.batteryNumber2 !== undefined) patch.battery_number_2 = event.batteryNumber2 ?? null
+      if (event.chargerCableNumber !== undefined) patch.charger_cable_number = event.chargerCableNumber ?? null
       break
     case "EXTENSION": {
       // Read current weeks, add extraWeeks. Single-statement RPC would be

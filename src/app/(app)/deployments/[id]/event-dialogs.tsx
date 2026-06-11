@@ -43,7 +43,7 @@ import {
 
 type DialogKey = "payment" | "deposit" | "refund" | "call" | "replace" | "extend" | "return" | "lock" | "unlock" | "editDate" | null
 
-export type AvailableVehicle = { id: string; vtd_no: string; colour: string | null }
+export type AvailableVehicle = { id: string; vtd_no: string; ec: string | null; colour: string | null }
 
 const INITIAL: ActionState = { ok: false, error: null }
 
@@ -58,6 +58,7 @@ export function EventDialogs({
   deploymentId,
   deploymentStatus,
   currentVtd,
+  currentEc,
   availableVehicles,
   isCmd = false,
   deployDate,
@@ -72,6 +73,7 @@ export function EventDialogs({
   deploymentId: string
   deploymentStatus: string
   currentVtd: string
+  currentEc?: string | null
   availableVehicles: AvailableVehicle[]
   /** CMD-only controls (e.g. edit deploy date). */
   isCmd?: boolean
@@ -154,7 +156,12 @@ export function EventDialogs({
       <ReplacementDialog
         deploymentId={deploymentId}
         currentVtd={currentVtd}
+        currentEc={currentEc}
         availableVehicles={availableVehicles}
+        batteryType={batteryType}
+        issuedBattery={issuedBattery}
+        issuedBattery2={issuedBattery2}
+        issuedCharger={issuedCharger}
         open={open === "replace"}
         onClose={close}
       />
@@ -578,13 +585,23 @@ function ReminderCallDialog({
 function ReplacementDialog({
   deploymentId,
   currentVtd,
+  currentEc,
   availableVehicles,
+  batteryType,
+  issuedBattery,
+  issuedBattery2,
+  issuedCharger,
   open,
   onClose,
 }: {
   deploymentId: string
   currentVtd: string
+  currentEc?: string | null
   availableVehicles: AvailableVehicle[]
+  batteryType?: string | null
+  issuedBattery?: string | null
+  issuedBattery2?: string | null
+  issuedCharger?: string | null
   open: boolean
   onClose: () => void
 }) {
@@ -593,6 +610,11 @@ function ReplacementDialog({
     INITIAL
   )
   useCloseOnSuccess(state, onClose)
+
+  const [batteryMode, setBatteryMode] = React.useState<"Same" | "Change">("Same")
+  const isFixed = batteryType === "Fixed"
+  const isDual = batteryType === "Dual"
+  const change = batteryMode === "Change"
 
   return (
     <DialogShell
@@ -603,6 +625,9 @@ function ReplacementDialog({
     >
       <form action={formAction} className="space-y-4">
         <FormError message={state.error} />
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Current vehicle — VTD <span className="font-mono">{currentVtd}</span> · EC <span className="font-mono">{currentEc ?? "—"}</span>
+        </div>
         <Field
           label="Event date"
           name="event_date"
@@ -616,7 +641,7 @@ function ReplacementDialog({
           </option>
           {availableVehicles.map((v) => (
             <option key={v.id} value={v.id}>
-              {v.vtd_no}{v.colour ? ` — ${v.colour}` : ""}
+              VTD {v.vtd_no} · EC {v.ec ?? "—"}{v.colour ? ` · ${v.colour}` : ""}
             </option>
           ))}
         </SelectField>
@@ -628,6 +653,41 @@ function ReplacementDialog({
             </option>
           ))}
         </SelectField>
+
+        {/* Carries the battery type so the server requires the right fields. */}
+        <input type="hidden" name="battery_type" value={batteryType ?? "Single"} />
+        <SelectField
+          label="Battery & charger"
+          name="battery_mode"
+          required
+          value={batteryMode}
+          onChange={(e) => setBatteryMode(e.target.value as "Same" | "Change")}
+          hint={
+            change
+              ? "Enter the new vehicle's battery & charger numbers."
+              : `Keeping current — Battery ${issuedBattery ?? "—"}${issuedBattery2 ? ` / ${issuedBattery2}` : ""} · Charger ${issuedCharger ?? "—"}.`
+          }
+        >
+          <option value="Same">Same — keep current</option>
+          <option value="Change">Change — enter new</option>
+        </SelectField>
+
+        {change ? (
+          <div className="grid grid-cols-2 gap-3">
+            {!isFixed ? (
+              <Field
+                label={isDual ? "New battery no. 1" : "New battery no."}
+                name="battery_number"
+                required
+              />
+            ) : null}
+            {isDual ? (
+              <Field label="New battery no. 2" name="battery_number_2" required />
+            ) : null}
+            <Field label="New charger cable no." name="charger_cable_number" required />
+          </div>
+        ) : null}
+
         <TextareaField label="Notes" name="notes" rows={2} />
         <div className="flex items-center justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>

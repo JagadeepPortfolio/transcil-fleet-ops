@@ -132,12 +132,33 @@ export const RETURN_REASONS = [
   "Other",
 ] as const
 
-export const replacementSchema = z.object({
-  event_date: dateSchema,
-  new_vehicle_id: dbUuid("Pick a replacement vehicle"),
-  reason: optionalText(500),
-  notes: notesSchema,
-})
+export const replacementSchema = z
+  .object({
+    event_date: dateSchema,
+    new_vehicle_id: dbUuid("Pick a replacement vehicle"),
+    reason: optionalText(500),
+    // Battery & charger: "Same" keeps the current values, "Change" requires new
+    // ones. battery_type (carried hidden) decides how many battery numbers.
+    battery_mode: z.enum(["Same", "Change"]).optional().or(z.literal("")).transform((v) => (v ? v : "Same")),
+    battery_type: optionalText(10),
+    battery_number: optionalText(60),
+    battery_number_2: optionalText(60),
+    charger_cable_number: optionalText(60),
+    notes: notesSchema,
+  })
+  .superRefine((data, ctx) => {
+    if (data.battery_mode !== "Change") return
+    if (!data.charger_cable_number) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["charger_cable_number"], message: "New charger cable number is required" })
+    }
+    const t = data.battery_type === "Fixed" || data.battery_type === "Dual" ? data.battery_type : "Single"
+    if (t !== "Fixed" && !data.battery_number) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["battery_number"], message: "New battery number is required" })
+    }
+    if (t === "Dual" && !data.battery_number_2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["battery_number_2"], message: "Second battery number is required" })
+    }
+  })
 export type ReplacementInput = z.infer<typeof replacementSchema>
 
 /**

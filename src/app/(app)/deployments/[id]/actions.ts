@@ -194,6 +194,7 @@ export async function replaceVehicleAction(
   const newVehicle = newVehicleRes.data as { id: string; vtd_no: string }
 
   try {
+    const changeBattery = parsed.data.battery_mode === "Change"
     await logActivityEvent(deploymentId, {
       type: "REPLACEMENT",
       eventDate: parsed.data.event_date,
@@ -202,6 +203,13 @@ export async function replaceVehicleAction(
       oldVtd: dep.vehicles?.vtd_no ?? "—",
       newVtd: newVehicle.vtd_no,
       reason: parsed.data.reason,
+      ...(changeBattery
+        ? {
+            batteryNumber: parsed.data.battery_number ?? "",
+            batteryNumber2: parsed.data.battery_number_2 ?? "",
+            chargerCableNumber: parsed.data.charger_cable_number ?? "",
+          }
+        : {}),
       notes: parsed.data.notes,
     })
   } catch (e) {

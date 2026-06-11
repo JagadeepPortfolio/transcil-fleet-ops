@@ -96,9 +96,11 @@ export default async function DeploymentDetailPage({
                   deploymentId={d.id}
                   deploymentStatus={d.status}
                   currentVtd={d.vtd_no ?? "—"}
-                  availableVehicles={availableVehicles.map((v: { id: string; vtd_no: string; colour: string | null }) => ({
+                  currentEc={d.vehicle_serial}
+                  availableVehicles={availableVehicles.map((v: { id: string; vtd_no: string; vehicle_id: string | null; colour: string | null }) => ({
                     id: v.id,
                     vtd_no: v.vtd_no,
+                    ec: v.vehicle_id,
                     colour: v.colour,
                   }))}
                   isCmd={isCmd}

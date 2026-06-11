@@ -374,6 +374,22 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 25 — Replace Vehicle enhancements (2026-06-11)
+
+- **Replace dialog** now shows the **EC number** (vehicle serial) for both the
+  current and the new vehicle (options read `VTD … · EC … · colour`; a current-
+  vehicle line shows VTD + EC).
+- New **"Battery & charger"** toggle (Same / Change). **Same** keeps the current
+  battery/charger; **Change** reveals required fields for the new vehicle's
+  battery number(s) (per the deployment's battery type — Fixed none / Single one
+  / Dual two) and charger cable number.
+- On "Change", `logActivityEvent(REPLACEMENT)` patches the deployment's
+  battery/charger and records the new values on the activity-log row for audit;
+  the vehicle swap is unchanged. Conditional validation in `replacementSchema`
+  (hidden `battery_type` carries the type). No migration (columns already exist).
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
