@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { up, upperOptional } from "./helpers"
 
 export const riderSources = ["Individual", "3PL", "Camions"] as const
 
@@ -22,11 +23,9 @@ export const purposeOptions = [
   "Others",
 ] as const
 
-const optText = (max: number) =>
-  z.string().trim().max(max).optional().or(z.literal(""))
 
 export const riderCreateSchema = z.object({
-  name: z.string().trim().min(2, "Name must be at least 2 characters").max(120),
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(120).transform(up),
   phone: z
     .string()
     .trim()
@@ -39,12 +38,13 @@ export const riderCreateSchema = z.object({
     .or(z.literal(""))
     .transform((v) => (v ? v : undefined)),
   source: z.enum(riderSources),
-  app_rider_id: z.string().trim().max(50).optional().or(z.literal("")),
+  app_rider_id: upperOptional(50),
   current_location: z
     .string()
     .trim()
     .min(2, "Current location is required")
-    .max(200),
+    .max(200)
+    .transform(up),
   emergency_contact_relationship: z.enum(emergencyRelationships, {
     message: "Pick a relationship",
   }),
@@ -52,17 +52,18 @@ export const riderCreateSchema = z.object({
     .string()
     .trim()
     .min(2, "Emergency contact name is required")
-    .max(120),
+    .max(120)
+    .transform(up),
   emergency_contact_number: z
     .string()
     .trim()
     .regex(/^[0-9]{10}$/, "Emergency contact number must be 10 digits"),
   purpose: z.enum(purposeOptions, { message: "Select a purpose" }),
-  store_id: optText(80),
-  store_name: optText(120),
-  store_location: optText(160),
-  purpose_other: optText(300),
-  address: z.string().trim().min(5, "Address is required").max(500),
+  store_id: upperOptional(80),
+  store_name: upperOptional(120),
+  store_location: upperOptional(160),
+  purpose_other: upperOptional(300),
+  address: z.string().trim().min(5, "Address is required").max(500).transform(up),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
 }).superRefine((v, ctx) => {
   if (v.purpose === "Others") {

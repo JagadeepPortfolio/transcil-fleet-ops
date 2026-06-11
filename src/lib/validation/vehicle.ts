@@ -1,10 +1,11 @@
 import { z } from "zod"
+import { up, upperOptional } from "./helpers"
 
 export const vehicleCreateSchema = z.object({
-  vtd_no: z.string().trim().min(3, "VTD number is required").max(40),
-  vehicle_id: z.string().trim().min(1, "EC No is required").max(40),
-  chassis_no: z.string().trim().max(60).optional().or(z.literal("")),
-  colour: z.string().trim().max(40).optional().or(z.literal("")),
+  vtd_no: z.string().trim().min(3, "VTD number is required").max(40).transform(up),
+  vehicle_id: z.string().trim().min(1, "EC No is required").max(40).transform(up),
+  chassis_no: upperOptional(60),
+  colour: upperOptional(40),
 })
 
 export type VehicleCreateInput = z.infer<typeof vehicleCreateSchema>

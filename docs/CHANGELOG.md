@@ -419,6 +419,22 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 28 — Uppercase data normalization (2026-06-11)
+
+- All **identifiers & names auto-normalize to UPPERCASE** on save (free-text
+  **Notes excluded**; email/password/phone/amount/date untouched). Covers rider
+  name/address/location/emergency name/IDs/store fields, vehicle VTD/EC/chassis/
+  colour, battery & charger numbers, and transaction IDs — via `up` /
+  `upperOptional` helpers in `validation/helpers.ts` applied across the rider /
+  vehicle / deployment / activity schemas.
+- Text inputs (`type="text"`) **display uppercase as you type** (visual only;
+  the value is normalized for real on save). Added an `uppercase` opt-out prop to
+  the shared `Field`.
+- **Migration 0040** backfills existing rows (riders / vehicles / deployments /
+  activity_log) to uppercase for the same columns. `upper()` is idempotent.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

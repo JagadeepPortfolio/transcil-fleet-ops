@@ -16,3 +16,20 @@ export const dbUuid = (msg: string) =>
     /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
     msg,
   )
+
+/**
+ * Uppercase normalization. Identifiers and names are stored in UPPERCASE so the
+ * data is consistent regardless of how staff typed it (free-text Notes are left
+ * as-is). Pairs with the visual uppercasing on text inputs.
+ */
+export const up = (v: string) => v.toUpperCase()
+
+/** Optional trimmed text, uppercased; empty → undefined. */
+export const upperOptional = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v.toUpperCase() : undefined))

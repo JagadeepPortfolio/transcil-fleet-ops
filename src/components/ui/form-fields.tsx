@@ -39,6 +39,7 @@ export function Field({
   defaultValue,
   hint,
   inputProps,
+  uppercase,
 }: {
   label: string
   name: string
@@ -47,7 +48,11 @@ export function Field({
   defaultValue?: string
   hint?: string
   inputProps?: React.InputHTMLAttributes<HTMLInputElement>
+  /** Visually uppercase the text. Defaults on for plain text inputs (data is
+   *  also normalized to uppercase on save); pass false to opt out. */
+  uppercase?: boolean
 }) {
+  const upper = uppercase ?? type === "text"
   return (
     <div className="space-y-1.5">
       <FormLabel htmlFor={name} required={required}>
@@ -59,8 +64,9 @@ export function Field({
         type={type}
         required={required}
         defaultValue={defaultValue}
+        autoCapitalize={upper ? "characters" : undefined}
         {...inputProps}
-        className={cn(baseInput, inputProps?.className)}
+        className={cn(baseInput, upper && "uppercase placeholder:normal-case", inputProps?.className)}
       />
       {hint ? <FormHint>{hint}</FormHint> : null}
     </div>

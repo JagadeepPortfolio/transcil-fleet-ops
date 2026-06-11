@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { dbUuid } from "./helpers"
+import { dbUuid, up } from "./helpers"
 
 export const rentalTypes = ["Weekly", "Monthly"] as const
 
@@ -11,7 +11,7 @@ const optionalBattery = z
   .max(60)
   .optional()
   .or(z.literal(""))
-  .transform((v) => (v ? v : undefined))
+  .transform((v) => (v ? v.toUpperCase() : undefined))
 
 export const deploymentCreateSchema = z
   .object({
@@ -38,7 +38,8 @@ export const deploymentCreateSchema = z
       .string()
       .trim()
       .min(1, "Charger cable number is required")
-      .max(60),
+      .max(60)
+      .transform(up),
     notes: z.string().trim().max(2000).optional().or(z.literal("")),
   })
   .superRefine((data, ctx) => {

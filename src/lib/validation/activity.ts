@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { dbUuid } from "./helpers"
+import { dbUuid, up, upperOptional } from "./helpers"
 
 /**
  * Zod schemas for the Session 12 "collection loop" — the four write flows
@@ -53,6 +53,7 @@ const requiredTxnId = z
   .trim()
   .min(1, "Transaction ID is required")
   .max(60)
+  .transform(up)
 
 export const paymentSchema = z.object({
   event_date: dateSchema,
@@ -67,7 +68,7 @@ export const paymentSchema = z.object({
     .optional()
     .or(z.literal("").transform(() => undefined)),
   transaction_id: requiredTxnId,
-  additional_transaction_id: optionalText(60),
+  additional_transaction_id: upperOptional(60),
   notes: notesSchema,
 })
 export type PaymentInput = z.infer<typeof paymentSchema>
@@ -88,7 +89,7 @@ export const depositRefundSchema = z.object({
   refund_status: z.enum(["Refunded", "Carried Forward"], {
     message: "Pick a refund status",
   }),
-  transaction_id: optionalText(60),
+  transaction_id: upperOptional(60),
   notes: notesSchema,
 })
 export type DepositRefundInput = z.infer<typeof depositRefundSchema>
@@ -141,9 +142,9 @@ export const replacementSchema = z
     // ones. battery_type (carried hidden) decides how many battery numbers.
     battery_mode: z.enum(["Same", "Change"]).optional().or(z.literal("")).transform((v) => (v ? v : "Same")),
     battery_type: optionalText(10),
-    battery_number: optionalText(60),
-    battery_number_2: optionalText(60),
-    charger_cable_number: optionalText(60),
+    battery_number: upperOptional(60),
+    battery_number_2: upperOptional(60),
+    charger_cable_number: upperOptional(60),
     notes: notesSchema,
   })
   .superRefine((data, ctx) => {
@@ -203,13 +204,14 @@ export const returnSchema = z
     // Carries the deployment's battery_type so we know how many returned battery
     // numbers to require. Null/legacy deployments are treated as Single.
     battery_type: optionalText(10),
-    battery_number: optionalText(60),
-    battery_number_2: optionalText(60),
+    battery_number: upperOptional(60),
+    battery_number_2: upperOptional(60),
     charger_cable_number: z
       .string()
       .trim()
       .min(1, "Returned charger cable number is required")
-      .max(60),
+      .max(60)
+      .transform(up),
     notes: notesSchema,
   })
   .superRefine((data, ctx) => {
