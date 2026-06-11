@@ -81,11 +81,9 @@ export default async function VehiclesAdminPage() {
         title="Vehicles"
         description={`${rows.length} total · ${available} available · ${inUse} in use.`}
         action={
-          isCmd ? (
-            <Button render={<Link href="/admin/vehicles/new" />}>
-              <Plus /> New vehicle
-            </Button>
-          ) : undefined
+          <Button render={<Link href="/admin/vehicles/new" />}>
+            <Plus /> New vehicle
+          </Button>
         }
       />
 
@@ -96,17 +94,11 @@ export default async function VehiclesAdminPage() {
           <EmptyState
             icon={<Bike />}
             title="No vehicles yet"
-            description={
-              isCmd
-                ? "Add the first vehicle. Deployments can only be created against registered VTDs."
-                : "No vehicles registered yet."
-            }
+            description="Add the first vehicle. Deployments can only be created against registered VTDs."
             action={
-              isCmd ? (
-                <Button render={<Link href="/admin/vehicles/new" />}>
-                  <Plus /> New vehicle
-                </Button>
-              ) : undefined
+              <Button render={<Link href="/admin/vehicles/new" />}>
+                <Plus /> New vehicle
+              </Button>
             }
           />
         }

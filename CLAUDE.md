@@ -226,9 +226,11 @@ These are load-bearing and easy to break; details in ARCHITECTURE.md:
   after creation (editing the date won't renumber it).
 - **`deployments_enriched` uses `d.*`** → adding a deployments column requires
   **recreating the view** (Postgres freezes the column list). See 0021/0025.
-- **Vehicles screen:** viewable by all roles; add/edit/delete are CMD-only via
-  per-page `getCurrentRole()` (`src/lib/auth/role.ts`) + RLS. The `(app)/admin`
-  layout is no longer blanket CMD-only — new admin pages must self-gate.
+- **Vehicles screen:** viewable by all roles; **adding** a vehicle is allowed for
+  all authenticated users (migration 0039 — RLS `vehicles_insert_all`; the new
+  page no longer self-gates). **Edit/delete remain CMD-only** via per-page
+  `getCurrentRole()` (`src/lib/auth/role.ts`) + RLS. The `(app)/admin` layout is
+  no longer blanket CMD-only — new admin pages must self-gate.
 - **Deploy/region:** single Vercel region `bom1` (`vercel.json`) co-located with
   Supabase; deploy is manual `npx vercel --prod` (no Git auto-deploy).
 

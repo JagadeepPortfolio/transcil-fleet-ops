@@ -408,6 +408,17 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 27 — Vehicle detail EC No + open "add vehicle" (2026-06-11)
+
+- Deployment detail now shows **EC No** (`vehicle_serial`) in the header line and
+  as a card (plus a VTD No card).
+- **Adding a vehicle is now allowed for all authenticated users** (was CMD-only).
+  Migration 0039 replaces `vehicles_insert_cmd` with `vehicles_insert_all`
+  (`WITH CHECK (true)`); the New Vehicle page no longer self-gates and the
+  button shows for everyone. **Edit/delete stay CMD-only.**
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
