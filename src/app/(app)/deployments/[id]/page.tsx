@@ -69,7 +69,7 @@ export default async function DeploymentDetailPage({
           { label: d.deployment_code ?? d.rider_name ?? "Deployment" },
         ]}
         title={d.rider_name ?? "Deployment"}
-        description={`${d.deployment_code ? `${d.deployment_code} · ` : ""}VTD ${d.vtd_no ?? "—"} · ${d.hub_name ?? "—"}`}
+        description={`${d.deployment_code ? `${d.deployment_code} · ` : ""}VTD ${d.vtd_no ?? "—"} · EC ${d.vehicle_serial ?? "—"} · ${d.hub_name ?? "—"}`}
         action={
           <Button variant="ghost" render={<Link href="/deployments" />}>
             <ArrowLeft /> Back
@@ -182,6 +182,8 @@ export default async function DeploymentDetailPage({
               value={inr(d.balance)}
               accent={d.balance != null && d.balance > 0}
             />
+            <InfoCard label="VTD No" value={d.vtd_no ?? "—"} />
+            <InfoCard label="EC No" value={d.vehicle_serial ?? "—"} />
             <InfoCard label="Battery type" value={d.battery_type ?? "—"} />
             {d.battery_type !== "Fixed" ? (
               <InfoCard
