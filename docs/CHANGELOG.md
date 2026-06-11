@@ -360,6 +360,20 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 24 — Daily Activity report (2026-06-11)
+
+- New **Daily Activity** report (`/reports/daily-activity`, 4th report card):
+  per-day **deployments**, **customers** (distinct riders deployed that day),
+  and money collected split into **Deposit · Weekly rent · Late fee · Total**,
+  with a grand-total row.
+- **From / To** date filter (GET params), **defaults to today** (IST). Money is
+  txn-gated (`transaction_id IS NOT NULL`) and inflows-only (refunds excluded),
+  consistent with the money model. Deployments grouped by `deploy_date`, money
+  by `event_date`. New `getDailyActivity(from, to)` helper in `reports.ts`.
+- No migration (read-only over `deployments` + `activity_log`).
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

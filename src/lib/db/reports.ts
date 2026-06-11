@@ -284,3 +284,109 @@ export async function getHubPerformance(
     }
   })
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Daily activity — deployments, customers & money collected per day
+// ─────────────────────────────────────────────────────────────────────────
+
+export type DailyActivityRow = {
+  date: string
+  deployments: number
+  customers: number
+  deposit: number
+  rent: number
+  lateFee: number
+  total: number
+}
+
+export type DailyActivity = {
+  rows: DailyActivityRow[]
+  totals: Omit<DailyActivityRow, "date">
+}
+
+function addDay(d: string): string {
+  const dt = new Date(d + "T00:00:00Z")
+  dt.setUTCDate(dt.getUTCDate() + 1)
+  return dt.toISOString().slice(0, 10)
+}
+
+/**
+ * Per-day operations summary for a date range (inclusive), both bounds as
+ * YYYY-MM-DD IST business dates:
+ *   deployments  — deployments started that day (deploy_date)
+ *   customers    — distinct riders deployed that day
+ *   deposit/rent/lateFee — money collected that day (event_date), txn-gated,
+ *                  matching the money model (transaction_id IS NOT NULL).
+ * Inflows only — refunds are excluded.
+ */
+export async function getDailyActivity(from: string, to: string): Promise<DailyActivity> {
+  const supabase = createClient()
+  const [depRes, actRes] = await Promise.all([
+    supabase
+      .from("deployments")
+      .select("deploy_date, rider_id")
+      .gte("deploy_date", from)
+      .lte("deploy_date", to)
+      .is("deleted_at", null),
+    supabase
+      .from("activity_log")
+      .select("event_date, event_type, payment_category, amount_inr")
+      .in("event_type", ["PAYMENT", "DEPOSIT"])
+      .not("transaction_id", "is", null)
+      .gte("event_date", from)
+      .lte("event_date", to)
+      .is("deleted_at", null),
+  ])
+  if (depRes.error) throw depRes.error
+  if (actRes.error) throw actRes.error
+
+  type Agg = { deployments: number; riders: Set<string>; deposit: number; rent: number; lateFee: number }
+  const map = new Map<string, Agg>()
+  const ensure = (d: string): Agg => {
+    let r = map.get(d)
+    if (!r) { r = { deployments: 0, riders: new Set(), deposit: 0, rent: 0, lateFee: 0 }; map.set(d, r) }
+    return r
+  }
+
+  for (const d of depRes.data ?? []) {
+    const row = d as { deploy_date: string; rider_id: string | null }
+    const a = ensure(row.deploy_date)
+    a.deployments += 1
+    if (row.rider_id) a.riders.add(row.rider_id)
+  }
+  for (const e of actRes.data ?? []) {
+    const ev = e as { event_date: string; event_type: string; payment_category: string | null; amount_inr: number | null }
+    const a = ensure(ev.event_date)
+    const amt = Number(ev.amount_inr) || 0
+    if (ev.event_type === "DEPOSIT") a.deposit += amt
+    else if (ev.event_type === "PAYMENT") {
+      if (ev.payment_category === "Late fee") a.lateFee += amt
+      else a.rent += amt
+    }
+  }
+
+  const rows: DailyActivityRow[] = []
+  const totals = { deployments: 0, customers: 0, deposit: 0, rent: 0, lateFee: 0, total: 0 }
+  let d = from
+  let guard = 0
+  while (d <= to && guard < 732) {
+    const a = map.get(d)
+    const deployments = a?.deployments ?? 0
+    const customers = a?.riders.size ?? 0
+    const deposit = a?.deposit ?? 0
+    const rent = a?.rent ?? 0
+    const lateFee = a?.lateFee ?? 0
+    const total = deposit + rent + lateFee
+    rows.push({ date: d, deployments, customers, deposit, rent, lateFee, total })
+    totals.deployments += deployments
+    totals.customers += customers
+    totals.deposit += deposit
+    totals.rent += rent
+    totals.lateFee += lateFee
+    totals.total += total
+    d = addDay(d)
+    guard += 1
+  }
+
+  return { rows, totals }
+}

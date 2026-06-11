@@ -2,6 +2,7 @@ import Link from "next/link"
 import {
   BarChart3,
   CalendarDays,
+  CalendarRange,
   Clock,
   Building2,
 } from "lucide-react"
@@ -14,6 +15,13 @@ export const metadata = {
 }
 
 const REPORTS = [
+  {
+    title: "Daily Activity",
+    description:
+      "Per-day deployments, customers, and money collected (deposit + weekly rent + late fee). Filter by date range; defaults to today.",
+    href: "/reports/daily-activity",
+    icon: CalendarRange,
+  },
   {
     title: "Monthly Summary",
     description:
