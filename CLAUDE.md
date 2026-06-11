@@ -144,14 +144,20 @@ The mapping table lives in the docblock at the top of
 `src/lib/db/activity-log.ts`. When adding a new event type, update both
 the switch in that file and `docs/RIDER_FLOWS.md`.
 
-### 2. Vehicle availability is derived, not stored
+### 2. "In Use" is derived, not stored
 
-There is no `vehicles.status` column. Availability = absence of an
-ACTIVE, non-deleted deployment for that vehicle. The concurrency guard
-is the partial unique index `deployments_active_vehicle_uniq` (see
-migration 0004). Any query that lists "available vehicles" must filter
-via `NOT EXISTS` or a left-join. Adding a status column to `vehicles`
-creates drift and must be rejected.
+A vehicle is **In Use** iff it has an ACTIVE, non-deleted deployment — never
+stored, so it can't drift. The concurrency guard is the partial unique index
+`deployments_active_vehicle_uniq` (migration 0004). **Do not add a stored column
+that duplicates In-Use/availability.**
+
+`vehicles.service_status` (migration 0041, CMD-only) is **not** that duplicate:
+it's a manual condition for **idle** vehicles only — `Available` (default),
+`Under Repair`, `In Factory`. The effective status shown = In Use (if active
+deployment) **else** `service_status`. A vehicle is offered for a new deployment
+only when it has **no active deployment AND `service_status='Available'`**
+(see `listAvailableVehicles`). Never let `service_status` say "In Use" or be set
+on a deployed vehicle to mean availability — that's the drift the rule forbids.
 
 ### 3. One ACTIVE deployment per rider
 

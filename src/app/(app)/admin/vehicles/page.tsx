@@ -19,7 +19,7 @@ export default async function VehiclesAdminPage() {
   const [vehRes, activeRes] = await Promise.all([
     supabase
       .from("vehicles")
-      .select("id, vtd_no, vehicle_id, chassis_no, colour, hub_id, created_by_name, vehicle_types(name), hubs(code, name)")
+      .select("id, vtd_no, vehicle_id, chassis_no, colour, service_status, hub_id, created_by_name, vehicle_types(name), hubs(code, name)")
       .is("deleted_at", null)
       .order("vtd_no", { ascending: true }),
     supabase
@@ -49,6 +49,7 @@ export default async function VehiclesAdminPage() {
     vehicle_id: string | null
     chassis_no: string | null
     colour: string | null
+    service_status: string
     hub_id: number | null
     created_by_name: string | null
     vehicle_types: { name: string } | null
@@ -63,6 +64,7 @@ export default async function VehiclesAdminPage() {
       vehicle_id: v.vehicle_id,
       chassis_no: v.chassis_no,
       colour: v.colour,
+      service_status: v.service_status,
       created_by_name: v.created_by_name,
       type_name: v.vehicle_types?.name ?? null,
       hub_name: v.hubs ? `${v.hubs.code} — ${v.hubs.name}` : null,
@@ -72,14 +74,17 @@ export default async function VehiclesAdminPage() {
   })
 
   const inUse = rows.filter((r) => r.active_rider).length
-  const available = rows.length - inUse
+  const available = rows.filter(
+    (r) => !r.active_rider && r.service_status === "Available"
+  ).length
+  const outOfService = rows.length - inUse - available
 
   return (
     <div className="space-y-6">
       <PageHeader
         breadcrumbs={[{ label: "Admin" }, { label: "Vehicles" }]}
         title="Vehicles"
-        description={`${rows.length} total · ${available} available · ${inUse} in use.`}
+        description={`${rows.length} total · ${available} available · ${inUse} in use${outOfService ? ` · ${outOfService} out of service` : ""}.`}
         action={
           <Button render={<Link href="/admin/vehicles/new" />}>
             <Plus /> New vehicle

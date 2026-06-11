@@ -8,6 +8,7 @@ export type VehicleRow = {
   vehicle_type_id: number
   hub_id: number | null
   colour: string | null
+  service_status: string
   created_at: string
   updated_at: string
 }
@@ -47,8 +48,9 @@ export async function listAvailableVehicles() {
   const [vehiclesRes, inUseRes] = await Promise.all([
     supabase
       .from("vehicles")
-      .select("id, vtd_no, vehicle_id, colour, vehicle_types(name)")
+      .select("id, vtd_no, vehicle_id, colour, service_status, vehicle_types(name)")
       .is("deleted_at", null)
+      .eq("service_status", "Available")
       .order("vtd_no", { ascending: true }),
     supabase
       .from("deployments")
@@ -59,6 +61,7 @@ export async function listAvailableVehicles() {
   if (vehiclesRes.error) throw vehiclesRes.error
   if (inUseRes.error) throw inUseRes.error
   const inUse = new Set((inUseRes.data ?? []).map((d) => (d as { vehicle_id: string }).vehicle_id))
+  // Available = service_status 'Available' (filtered above) AND no active deployment.
   return (vehiclesRes.data ?? []).filter(
     (v) => !inUse.has((v as unknown as { id: string }).id)
   )

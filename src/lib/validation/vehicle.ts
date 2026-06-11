@@ -10,11 +10,16 @@ export const vehicleCreateSchema = z.object({
 
 export type VehicleCreateInput = z.infer<typeof vehicleCreateSchema>
 
+// Manual service status for idle vehicles (CMD-only). "In Use" is NOT here — it
+// stays derived from an active deployment.
+export const serviceStatuses = ["Available", "Under Repair", "In Factory"] as const
+
 // Editing keeps the full set of fields (type + hub stay adjustable here even
 // though new vehicles default them — see admin/vehicles/new/page.tsx).
 export const vehicleUpdateSchema = vehicleCreateSchema.extend({
   vehicle_type_id: z.coerce.number().int().positive("Pick a vehicle type"),
   hub_id: z.coerce.number().int().positive("Pick a hub"),
+  service_status: z.enum(serviceStatuses, { message: "Pick a status" }),
 })
 
 export type VehicleUpdateInput = z.infer<typeof vehicleUpdateSchema>

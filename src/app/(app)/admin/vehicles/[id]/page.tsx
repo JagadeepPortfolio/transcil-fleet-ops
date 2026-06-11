@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getVehicle } from "@/lib/db/vehicles"
 import { listVehicleTypes, listHubs } from "@/lib/db/hubs"
 import { getCurrentRole } from "@/lib/auth/role"
-import { vehicleUpdateSchema } from "@/lib/validation/vehicle"
+import { vehicleUpdateSchema, serviceStatuses } from "@/lib/validation/vehicle"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
@@ -28,6 +28,7 @@ async function updateVehicle(id: string, formData: FormData) {
     vehicle_type_id: formData.get("vehicle_type_id"),
     hub_id: formData.get("hub_id"),
     colour: formData.get("colour") ?? "",
+    service_status: formData.get("service_status"),
   })
   if (!parsed.success) {
     const msg = parsed.error.issues.map((i) => i.message).join("; ")
@@ -48,6 +49,7 @@ async function updateVehicle(id: string, formData: FormData) {
       vehicle_type_id: input.vehicle_type_id,
       hub_id: input.hub_id,
       colour: input.colour || null,
+      service_status: input.service_status,
       updated_by: userId,
     })
     .eq("id", id)
@@ -147,6 +149,19 @@ export default async function EditVehiclePage({
             name="colour"
             defaultValue={vehicle.colour ?? ""}
           />
+          <SelectField
+            label="Status"
+            name="service_status"
+            required
+            defaultValue={vehicle.service_status ?? "Available"}
+            hint="“In Use” is set automatically when the vehicle has an active deployment."
+          >
+            {serviceStatuses.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </SelectField>
           <div className="flex items-center justify-end gap-3 border-t pt-5">
             <Button variant="ghost" render={<Link href="/admin/vehicles" />}>
               Cancel

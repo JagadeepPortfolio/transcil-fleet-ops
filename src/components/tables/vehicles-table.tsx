@@ -14,6 +14,7 @@ export type VehicleRow = {
   vehicle_id: string | null
   chassis_no: string | null
   colour: string | null
+  service_status: string
   type_name: string | null
   hub_name: string | null
   created_by_name: string | null
@@ -102,6 +103,10 @@ function makeColumns(canManage: boolean): ColumnDef<VehicleRow>[] {
           </div>
         )
       }
+      if (r.service_status === "Under Repair")
+        return <Badge variant="warning">Under Repair</Badge>
+      if (r.service_status === "In Factory")
+        return <Badge variant="info">In Factory</Badge>
       return <Badge variant="success">Available</Badge>
     },
   },
@@ -131,13 +136,14 @@ export function VehiclesTable({
 
   const columns = React.useMemo(() => makeColumns(canManage), [canManage])
 
-  // Availability is derived: a vehicle with an active rider is "In use",
-  // otherwise "Available" (matches the Availability column).
+  // "In use" = has an active rider (derived). "Available" = no active rider AND
+  // service status Available (Under Repair / In Factory are excluded).
+  const isInUse = (r: VehicleRow) => !!r.active_rider
+  const isAvailable = (r: VehicleRow) =>
+    !r.active_rider && r.service_status === "Available"
   const filtered = React.useMemo(() => {
     if (availability === "all") return rows
-    return rows.filter((r) =>
-      availability === "in_use" ? !!r.active_rider : !r.active_rider
-    )
+    return rows.filter((r) => (availability === "in_use" ? isInUse(r) : isAvailable(r)))
   }, [rows, availability])
 
   return (
@@ -152,7 +158,7 @@ export function VehiclesTable({
             opt.value === "all"
               ? rows.length
               : rows.filter((r) =>
-                  opt.value === "in_use" ? !!r.active_rider : !r.active_rider
+                  opt.value === "in_use" ? isInUse(r) : isAvailable(r)
                 ).length
           return (
             <Button

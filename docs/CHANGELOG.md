@@ -435,6 +435,21 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 29 — Vehicle service status (CMD) (2026-06-11)
+
+- **Migration 0041**: `vehicles.service_status` (`Available` | `Under Repair` |
+  `In Factory`, default Available). **CMD-only** edit on the vehicle edit page
+  (existing `vehicles_update_cmd` RLS).
+- **"In Use" stays derived** (active deployment) — `service_status` only applies
+  to idle vehicles. Effective status shown = In Use else `service_status`;
+  vehicles list shows Under Repair / In Factory badges and an "out of service"
+  count.
+- **New Deployment picker** now offers only `service_status='Available'` vehicles
+  with no active deployment (`listAvailableVehicles` filters both). Foundation for
+  Phase-2 repair tracking. Invariant #2 in CLAUDE.md updated to reflect this.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
