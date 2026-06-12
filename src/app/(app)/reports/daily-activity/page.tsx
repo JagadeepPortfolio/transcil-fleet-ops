@@ -91,7 +91,18 @@ export default async function DailyActivityPage({
                 {rows.map((r) => (
                   <TableRow key={r.date}>
                     <TableCell className="font-medium">{formatDate(r.date)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.deployments}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {r.deployments > 0 ? (
+                        <Link
+                          href={`/deployments?status=all&date=${r.date}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {r.deployments}
+                        </Link>
+                      ) : (
+                        r.deployments
+                      )}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">{r.customers}</TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.deposit)}</TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.rent)}</TableCell>

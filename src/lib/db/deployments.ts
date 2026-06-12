@@ -81,6 +81,7 @@ const STATUS_MAP: Record<DeploymentStatusFilter, string[] | null> = {
 export async function listDeployments(opts?: {
   status?: DeploymentStatusFilter
   q?: string
+  date?: string
   page?: number
   perPage?: number
 }): Promise<DeploymentListResult> {
@@ -97,6 +98,11 @@ export async function listDeployments(opts?: {
 
   const statuses = STATUS_MAP[status]
   if (statuses) query = query.in("status", statuses)
+
+  // Drill-down: deployments started on a specific day (deploy_date).
+  if (opts?.date && /^\d{4}-\d{2}-\d{2}$/.test(opts.date)) {
+    query = query.eq("deploy_date", opts.date)
+  }
 
   const q = (opts?.q ?? "").replace(/[,()*%]/g, " ").trim()
   if (q) {

@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { DeploymentsTable } from "@/components/tables/deployments-table"
+import { formatDate } from "@/lib/dates"
 
 export const metadata = {
   title: "Deployments · Transcil Fleet Ops",
@@ -33,17 +34,21 @@ const VALID_STATUS = new Set(STATUS_TABS.map((t) => t.value))
 export default async function DeploymentsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; q?: string; page?: string }
+  searchParams: { status?: string; q?: string; date?: string; page?: string }
 }) {
   const status: DeploymentStatusFilter =
     searchParams.status && VALID_STATUS.has(searchParams.status as DeploymentStatusFilter)
       ? (searchParams.status as DeploymentStatusFilter)
       : "active_locked"
   const q = (searchParams.q ?? "").trim()
+  const date =
+    searchParams.date && /^\d{4}-\d{2}-\d{2}$/.test(searchParams.date)
+      ? searchParams.date
+      : ""
   const page = Math.max(1, Number(searchParams.page) || 1)
 
   const [{ rows, total }, lockNow, atRisk] = await Promise.all([
-    listDeployments({ status, q, page, perPage: PER_PAGE }),
+    listDeployments({ status, q, date, page, perPage: PER_PAGE }),
     countDeploymentsByAction("LOCK_NOW"),
     countDeploymentsByAction("AT_RISK"),
   ])
@@ -52,13 +57,20 @@ export default async function DeploymentsPage({
   const fromRow = total === 0 ? 0 : (page - 1) * PER_PAGE + 1
   const toRow = Math.min(page * PER_PAGE, total)
 
-  // Build a query string preserving status + q, for tab/pagination links.
-  const link = (next: { status?: DeploymentStatusFilter; q?: string; page?: number }) => {
+  // Build a query string preserving status + q + date, for tab/pagination links.
+  const link = (next: {
+    status?: DeploymentStatusFilter
+    q?: string
+    date?: string
+    page?: number
+  }) => {
     const sp = new URLSearchParams()
     const s = next.status ?? status
     if (s !== "active_locked") sp.set("status", s)
     const nq = next.q ?? q
     if (nq) sp.set("q", nq)
+    const d = next.date !== undefined ? next.date : date
+    if (d) sp.set("date", d)
     const p = next.page ?? 1
     if (p > 1) sp.set("page", String(p))
     const qs = sp.toString()
@@ -113,6 +125,17 @@ export default async function DeploymentsPage({
           ) : null}
         </form>
       </Card>
+
+      {date ? (
+        <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">
+            Deployed on <span className="font-medium text-foreground">{formatDate(date)}</span>
+          </span>
+          <Button size="sm" variant="ghost" render={<Link href={link({ date: "", page: 1 })} />}>
+            Clear date
+          </Button>
+        </div>
+      ) : null}
 
       <DeploymentsTable
         rows={rows}
