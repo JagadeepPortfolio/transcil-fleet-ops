@@ -498,6 +498,23 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 34 — Deployments list: server-side pagination (2026-06-12)
+
+- **Deployments list is now server-paginated** (50/page) — fetches one page +
+  an exact count instead of the whole table, so it stays fast no matter how large
+  the table grows. Previously it fetched **and rendered** every row.
+- **Default scope = Active + Locked** (bounded by fleet size); a **status filter**
+  (Active+Locked / Active / Locked / Returned / Cancelled / All) and **DB search**
+  (rider / phone / VTD / EC / code) run server-side via URL params; Prev/Next +
+  "Showing A–B of N".
+- `listDeployments(opts)` now returns `{ rows, total, page, perPage }`;
+  `listActiveDeployments()` added for the dashboard (lock-now + urgent list);
+  `countDeploymentsByAction()` for header alerts. `DeploymentsTable` hides its
+  client filter (`hideFilter`). Uses the existing `deployments_status_due_date_idx`;
+  no migration.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

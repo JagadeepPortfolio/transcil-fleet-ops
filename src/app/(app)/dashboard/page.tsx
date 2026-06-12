@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/server"
-import { listDeployments } from "@/lib/db/deployments"
+import { listActiveDeployments } from "@/lib/db/deployments"
 import { listAvailableVehicles } from "@/lib/db/vehicles"
 import { Card } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
@@ -53,7 +53,7 @@ export default async function DashboardPage() {
       .select("id", { count: "exact", head: true })
       .is("deleted_at", null),
     listAvailableVehicles(),
-    listDeployments(),
+    listActiveDeployments(),
   ])
 
   const lockNow = deployments.filter((d) => d.action === "LOCK_NOW").length

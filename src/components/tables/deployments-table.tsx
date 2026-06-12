@@ -147,12 +147,15 @@ export function DeploymentsTable({
   rows: Row[]
   emptyState?: React.ReactNode
 }) {
+  // Server-driven list: search/filter/pagination live on the page (URL params),
+  // so the table's built-in client filter is hidden.
   return (
     <DataTable
       columns={columns}
       data={rows}
-      filterPlaceholder="Filter by rider, phone, VTD…"
+      hideFilter
       emptyState={emptyState}
+      getRowHref={(row) => `/deployments/${row.id}`}
     />
   )
 }
