@@ -453,8 +453,8 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 ## Session 30 — Most Urgent report + CSV export (2026-06-12)
 
 - New **Most Urgent** report (`/reports/most-urgent`, first report card): ACTIVE
-  deployments past due (`days_left < 0`), most overdue first. Columns: Rider
-  Name, EC No, Due Date, Days left, Customer Mobile No.
+  deployments **due today or past due** (`days_left <= 0`), most overdue first.
+  Columns: Rider Name, EC No, Due Date, Days left, Customer Mobile No.
 - **Download Excel (CSV)** via `/reports/most-urgent/export` route handler —
   UTF-8 BOM, same columns/sort, `most-urgent-<date>.csv`. Rider name links to the
   deployment so the officer can log the reminder call via the existing flow.

@@ -28,7 +28,7 @@ export default async function MostUrgentPage() {
       <PageHeader
         breadcrumbs={[{ label: "Reports", href: "/reports" }, { label: "Most Urgent" }]}
         title="Most Urgent"
-        description="Overdue active deployments (due date crossed) — call these riders first."
+        description="Active deployments due today or past due — call these riders first."
         action={
           <Button variant="ghost" render={<Link href="/reports" />}>
             <ArrowLeft /> Back
@@ -38,8 +38,8 @@ export default async function MostUrgentPage() {
 
       <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
         <div className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{rows.length}</span> overdue
-          rider{rows.length === 1 ? "" : "s"} to follow up.
+          <span className="font-semibold text-foreground">{rows.length}</span> rider
+          {rows.length === 1 ? "" : "s"} due today or overdue to follow up.
         </div>
         <Button render={<Link href="/reports/most-urgent/export" prefetch={false} />}>
           <Download /> Download Excel (CSV)
@@ -52,7 +52,7 @@ export default async function MostUrgentPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Rider Name</TableHead>
-                <TableHead>EC No</TableHead>
+                <TableHead>VTD / EC No</TableHead>
                 <TableHead>Due Date</TableHead>
                 <TableHead className="text-right">Days left</TableHead>
                 <TableHead>Customer Mobile No</TableHead>
@@ -77,10 +77,14 @@ export default async function MostUrgentPage() {
                       </Link>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
-                      {r.ec_no ?? "—"}
+                      {r.vtd ?? "—"} / {r.ec_no ?? "—"}
                     </TableCell>
                     <TableCell>{formatDate(r.due_date)}</TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums text-destructive">
+                    <TableCell
+                      className={`text-right font-semibold tabular-nums ${
+                        (r.days_left ?? 0) < 0 ? "text-destructive" : "text-warning-foreground"
+                      }`}
+                    >
                       {r.days_left ?? "—"}
                     </TableCell>
                     <TableCell className="font-mono">{r.phone ?? "—"}</TableCell>

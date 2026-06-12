@@ -6,7 +6,7 @@ import { formatDate } from "@/lib/dates"
 export async function GET() {
   const rows = await getMostUrgent()
 
-  const headers = ["Rider Name", "EC No", "Due Date", "Days left", "Customer Mobile No"]
+  const headers = ["Rider Name", "VTD / EC No", "Due Date", "Days left", "Customer Mobile No"]
   const esc = (v: string | number | null | undefined) => {
     const s = v == null ? "" : String(v)
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
@@ -15,7 +15,7 @@ export async function GET() {
   const lines = [headers.join(",")]
   for (const r of rows) {
     lines.push(
-      [r.rider_name, r.ec_no, formatDate(r.due_date), r.days_left, r.phone]
+      [r.rider_name, `${r.vtd ?? ""} / ${r.ec_no ?? ""}`, formatDate(r.due_date), r.days_left, r.phone]
         .map(esc)
         .join(",")
     )

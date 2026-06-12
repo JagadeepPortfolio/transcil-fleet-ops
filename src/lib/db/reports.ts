@@ -292,32 +292,35 @@ export async function getHubPerformance(
 export type MostUrgentRow = {
   id: string
   rider_name: string | null
+  vtd: string | null
   ec_no: string | null
   phone: string | null
   due_date: string | null
   days_left: number | null
 }
 
-/** ACTIVE deployments past their due date (days_left < 0), most overdue first. */
+/** ACTIVE deployments due today or past due (days_left <= 0), most overdue first. */
 export async function getMostUrgent(): Promise<MostUrgentRow[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("deployments_enriched")
-    .select("id, rider_name, rider_phone, vehicle_serial, due_date, days_left")
+    .select("id, rider_name, rider_phone, vtd_no, vehicle_serial, due_date, days_left")
     .eq("status", "ACTIVE")
-    .lt("days_left", 0)
+    .lte("days_left", 0)
     .order("days_left", { ascending: true })
   if (error) throw error
   return ((data ?? []) as Array<{
     id: string
     rider_name: string | null
     rider_phone: string | null
+    vtd_no: string | null
     vehicle_serial: string | null
     due_date: string | null
     days_left: number | null
   }>).map((d) => ({
     id: d.id,
     rider_name: d.rider_name,
+    vtd: d.vtd_no,
     ec_no: d.vehicle_serial,
     phone: d.rider_phone,
     due_date: d.due_date,
