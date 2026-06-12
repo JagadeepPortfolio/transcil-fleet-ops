@@ -5,6 +5,7 @@ import {
   CalendarRange,
   Clock,
   Building2,
+  AlertTriangle,
 } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
@@ -15,6 +16,13 @@ export const metadata = {
 }
 
 const REPORTS = [
+  {
+    title: "Most Urgent",
+    description:
+      "Overdue active deployments (due date crossed) with rider, EC No, due date, days left and mobile number. Download as Excel (CSV) for follow-up calls.",
+    href: "/reports/most-urgent",
+    icon: AlertTriangle,
+  },
   {
     title: "Daily Activity",
     description:
