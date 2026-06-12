@@ -80,7 +80,6 @@ export default async function DailyActivityPage({
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Deployments</TableHead>
-                  <TableHead className="text-right">Customers</TableHead>
                   <TableHead className="text-right">Collected — new deployments</TableHead>
                   <TableHead className="text-right">Collected — previous deployments</TableHead>
                   <TableHead className="text-right">Total collected</TableHead>
@@ -102,7 +101,6 @@ export default async function DailyActivityPage({
                         r.deployments
                       )}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{r.customers}</TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.newCollected)}</TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.prevCollected)}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">{inr(r.total)}</TableCell>
@@ -111,7 +109,6 @@ export default async function DailyActivityPage({
                 <TableRow className="border-t-2 bg-muted/40 font-semibold">
                   <TableCell>Total</TableCell>
                   <TableCell className="text-right tabular-nums">{totals.deployments}</TableCell>
-                  <TableCell className="text-right tabular-nums">{totals.customers}</TableCell>
                   <TableCell className="text-right tabular-nums">{inr(totals.newCollected)}</TableCell>
                   <TableCell className="text-right tabular-nums">{inr(totals.prevCollected)}</TableCell>
                   <TableCell className="text-right tabular-nums">{inr(totals.total)}</TableCell>
