@@ -42,10 +42,8 @@ async function createRider(formData: FormData) {
     emergency_contact_number: formData.get("emergency_contact_number") ?? "",
     purpose: formData.get("purpose"),
     store_id: formData.get("store_id") ?? "",
-    store_name: formData.get("store_name") ?? "",
     store_location: formData.get("store_location") ?? "",
     purpose_other: formData.get("purpose_other") ?? "",
-    address: formData.get("address") ?? "",
     notes: formData.get("notes") ?? "",
   })
 
@@ -110,10 +108,8 @@ async function createRider(formData: FormData) {
     emergency_contact_number: input.emergency_contact_number,
     purpose: input.purpose,
     store_id: input.store_id || null,
-    store_name: input.store_name || null,
     store_location: input.store_location || null,
     purpose_other: input.purpose_other || null,
-    address: input.address || null,
     notes: input.notes || null,
     photo_url: photoUrl,
     id_proof_url: idProofUrl,
@@ -239,7 +235,6 @@ export default async function NewRiderPage({
           </div>
 
           <RiderPurposeFields />
-          <Field label="Address" name="address" required />
           <TextareaField label="Notes" name="notes" />
           <div className="grid gap-5 sm:grid-cols-2">
             <FileField label="Photo" name="photo" accept="image/*" hint="≤ 400 KB" />

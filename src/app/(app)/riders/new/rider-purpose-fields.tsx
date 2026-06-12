@@ -7,7 +7,7 @@ import { purposeOptions } from "@/lib/validation/rider"
 
 /**
  * Purpose section with conditional fields:
- *  - a delivery platform → required Store ID / Store Name / Store Location
+ *  - a delivery platform → required Store ID / Store Location
  *  - "Others" → a required free-text description
  * Only the relevant inputs render, so only those submit.
  */
@@ -34,14 +34,13 @@ export function RiderPurposeFields() {
       </SelectField>
 
       {isStore ? (
-        <div className="grid gap-5 pt-2 sm:grid-cols-3">
+        <div className="grid gap-5 pt-2 sm:grid-cols-2">
           <Field
             label="Store ID"
             name="store_id"
             required
             hint={`The rider's ID for ${purpose}`}
           />
-          <Field label="Store Name" name="store_name" required />
           <Field label="Store Location" name="store_location" required />
         </div>
       ) : null}

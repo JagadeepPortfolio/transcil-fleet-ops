@@ -60,10 +60,8 @@ export const riderCreateSchema = z.object({
     .regex(/^[0-9]{10}$/, "Emergency contact number must be 10 digits"),
   purpose: z.enum(purposeOptions, { message: "Select a purpose" }),
   store_id: upperOptional(80),
-  store_name: upperOptional(120),
   store_location: upperOptional(160),
   purpose_other: upperOptional(300),
-  address: z.string().trim().min(5, "Address is required").max(500).transform(up),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
 }).superRefine((v, ctx) => {
   if (v.purpose === "Others") {
@@ -72,8 +70,6 @@ export const riderCreateSchema = z.object({
   } else {
     if (!v.store_id)
       ctx.addIssue({ path: ["store_id"], code: z.ZodIssueCode.custom, message: "Store ID is required" })
-    if (!v.store_name)
-      ctx.addIssue({ path: ["store_name"], code: z.ZodIssueCode.custom, message: "Store name is required" })
     if (!v.store_location)
       ctx.addIssue({ path: ["store_location"], code: z.ZodIssueCode.custom, message: "Store location is required" })
   }
