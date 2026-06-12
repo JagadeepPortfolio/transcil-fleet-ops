@@ -34,21 +34,33 @@ const VALID_STATUS = new Set(STATUS_TABS.map((t) => t.value))
 export default async function DeploymentsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; q?: string; date?: string; page?: string }
+  searchParams: {
+    status?: string
+    q?: string
+    date?: string
+    source?: string
+    from?: string
+    to?: string
+    page?: string
+  }
 }) {
   const status: DeploymentStatusFilter =
     searchParams.status && VALID_STATUS.has(searchParams.status as DeploymentStatusFilter)
       ? (searchParams.status as DeploymentStatusFilter)
       : "active_locked"
   const q = (searchParams.q ?? "").trim()
-  const date =
-    searchParams.date && /^\d{4}-\d{2}-\d{2}$/.test(searchParams.date)
-      ? searchParams.date
+  const dateRe = /^\d{4}-\d{2}-\d{2}$/
+  const date = searchParams.date && dateRe.test(searchParams.date) ? searchParams.date : ""
+  const from = searchParams.from && dateRe.test(searchParams.from) ? searchParams.from : ""
+  const to = searchParams.to && dateRe.test(searchParams.to) ? searchParams.to : ""
+  const source =
+    searchParams.source && ["Individual", "3PL", "Camions"].includes(searchParams.source)
+      ? searchParams.source
       : ""
   const page = Math.max(1, Number(searchParams.page) || 1)
 
   const [{ rows, total }, lockNow, atRisk] = await Promise.all([
-    listDeployments({ status, q, date, page, perPage: PER_PAGE }),
+    listDeployments({ status, q, date, source, from, to, page, perPage: PER_PAGE }),
     countDeploymentsByAction("LOCK_NOW"),
     countDeploymentsByAction("AT_RISK"),
   ])
@@ -57,11 +69,14 @@ export default async function DeploymentsPage({
   const fromRow = total === 0 ? 0 : (page - 1) * PER_PAGE + 1
   const toRow = Math.min(page * PER_PAGE, total)
 
-  // Build a query string preserving status + q + date, for tab/pagination links.
+  // Build a query string preserving status + q + date/source/range drill-downs.
   const link = (next: {
     status?: DeploymentStatusFilter
     q?: string
     date?: string
+    source?: string
+    from?: string
+    to?: string
     page?: number
   }) => {
     const sp = new URLSearchParams()
@@ -71,11 +86,19 @@ export default async function DeploymentsPage({
     if (nq) sp.set("q", nq)
     const d = next.date !== undefined ? next.date : date
     if (d) sp.set("date", d)
+    const src = next.source !== undefined ? next.source : source
+    if (src) sp.set("source", src)
+    const f = next.from !== undefined ? next.from : from
+    if (f) sp.set("from", f)
+    const t = next.to !== undefined ? next.to : to
+    if (t) sp.set("to", t)
     const p = next.page ?? 1
     if (p > 1) sp.set("page", String(p))
     const qs = sp.toString()
     return qs ? `/deployments?${qs}` : "/deployments"
   }
+
+  const hasDrill = !!(date || source || from || to)
 
   return (
     <div className="space-y-6">
@@ -126,13 +149,34 @@ export default async function DeploymentsPage({
         </form>
       </Card>
 
-      {date ? (
-        <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+      {hasDrill ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2 text-sm">
           <span className="text-muted-foreground">
-            Deployed on <span className="font-medium text-foreground">{formatDate(date)}</span>
+            {source ? (
+              <>
+                Source <span className="font-medium text-foreground">{source}</span>
+              </>
+            ) : null}
+            {source && (date || from || to) ? " · " : ""}
+            {date ? (
+              <>
+                Deployed on <span className="font-medium text-foreground">{formatDate(date)}</span>
+              </>
+            ) : from || to ? (
+              <>
+                Deployed{" "}
+                <span className="font-medium text-foreground">
+                  {from ? formatDate(from) : "…"} – {to ? formatDate(to) : "…"}
+                </span>
+              </>
+            ) : null}
           </span>
-          <Button size="sm" variant="ghost" render={<Link href={link({ date: "", page: 1 })} />}>
-            Clear date
+          <Button
+            size="sm"
+            variant="ghost"
+            render={<Link href={link({ date: "", source: "", from: "", to: "", page: 1 })} />}
+          >
+            Clear filters
           </Button>
         </div>
       ) : null}

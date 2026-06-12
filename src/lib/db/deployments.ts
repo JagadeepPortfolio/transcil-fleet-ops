@@ -78,10 +78,15 @@ const STATUS_MAP: Record<DeploymentStatusFilter, string[] | null> = {
  * status filter. Search runs in the DB across rider/phone/VTD/EC/code. Each call
  * fetches one page + an exact total, so it's fast regardless of table size.
  */
+const RIDER_SOURCES = ["Individual", "3PL", "Camions"]
+
 export async function listDeployments(opts?: {
   status?: DeploymentStatusFilter
   q?: string
   date?: string
+  source?: string
+  from?: string
+  to?: string
   page?: number
   perPage?: number
 }): Promise<DeploymentListResult> {
@@ -99,9 +104,20 @@ export async function listDeployments(opts?: {
   const statuses = STATUS_MAP[status]
   if (statuses) query = query.in("status", statuses)
 
-  // Drill-down: deployments started on a specific day (deploy_date).
+  // Drill-down by deploy_date: a single day, or a [from, to] range.
   if (opts?.date && /^\d{4}-\d{2}-\d{2}$/.test(opts.date)) {
     query = query.eq("deploy_date", opts.date)
+  } else {
+    if (opts?.from && /^\d{4}-\d{2}-\d{2}$/.test(opts.from)) {
+      query = query.gte("deploy_date", opts.from)
+    }
+    if (opts?.to && /^\d{4}-\d{2}-\d{2}$/.test(opts.to)) {
+      query = query.lte("deploy_date", opts.to)
+    }
+  }
+  // Drill-down by rider source.
+  if (opts?.source && RIDER_SOURCES.includes(opts.source)) {
+    query = query.eq("rider_source", opts.source)
   }
 
   const q = (opts?.q ?? "").replace(/[,()*%]/g, " ").trim()

@@ -141,16 +141,30 @@ export default async function DailyActivityPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bySource.rows.map((r) => (
+                {bySource.rows.map((r) => {
+                  const canDrill = r.deployments > 0 && r.source !== "—"
+                  return (
                   <TableRow key={r.source}>
                     <TableCell className="font-medium">{r.source}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.deployments}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {canDrill ? (
+                        <Link
+                          href={`/deployments?status=all&source=${encodeURIComponent(r.source)}&from=${from}&to=${to}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {r.deployments}
+                        </Link>
+                      ) : (
+                        r.deployments
+                      )}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.deposit)}</TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.rent)}</TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.lateFee)}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">{inr(r.total)}</TableCell>
                   </TableRow>
-                ))}
+                  )
+                })}
                 <TableRow className="border-t-2 bg-muted/40 font-semibold">
                   <TableCell>Total</TableCell>
                   <TableCell className="text-right tabular-nums">{bySource.totals.deployments}</TableCell>
