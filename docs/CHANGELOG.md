@@ -484,6 +484,20 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 33 — Daily Activity: by-source breakdown (2026-06-12)
+
+- **Daily Activity** report gains a **"By rider source"** comparison table above
+  the day-by-day table: one row per source (Individual / 3PL / Camions, + any
+  others, + Total) with **Deployments · Active · Deposit · Weekly rent · Late
+  fee · Total received** for the selected From/To range. 3PL shows ₹0 rent
+  (deposit-only).
+- Deployments counted by `deploy_date` (all statuses, Active broken out);
+  amounts by `event_date`, txn-gated, grouped by the deployment's rider source.
+  New `getDailySourceBreakdown(from, to)` helper (nested `riders(source)` embed).
+  No migration.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

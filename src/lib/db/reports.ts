@@ -433,3 +433,111 @@ export async function getDailyActivity(from: string, to: string): Promise<DailyA
 
   return { rows, totals }
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Daily activity — by rider source (Individual / 3PL / Camions / …)
+// ─────────────────────────────────────────────────────────────────────────
+
+export type SourceBreakdownRow = {
+  source: string
+  deployments: number
+  active: number
+  deposit: number
+  rent: number
+  lateFee: number
+  total: number
+}
+
+export type SourceBreakdown = {
+  rows: SourceBreakdownRow[]
+  totals: Omit<SourceBreakdownRow, "source">
+}
+
+const SOURCE_ORDER = ["Individual", "3PL", "Camions"]
+
+/**
+ * Deployments and money collected within [from, to], split by the rider's
+ * source. Deployments counted by deploy_date (all statuses, with Active broken
+ * out); amounts by event_date, txn-gated, inflows only — same rules as
+ * getDailyActivity, just grouped by source instead of by day.
+ */
+export async function getDailySourceBreakdown(from: string, to: string): Promise<SourceBreakdown> {
+  const supabase = createClient()
+  const [depRes, actRes] = await Promise.all([
+    supabase
+      .from("deployments")
+      .select("status, riders(source)")
+      .gte("deploy_date", from)
+      .lte("deploy_date", to)
+      .is("deleted_at", null),
+    supabase
+      .from("activity_log")
+      .select("event_type, payment_category, amount_inr, deployments(riders(source))")
+      .in("event_type", ["PAYMENT", "DEPOSIT"])
+      .not("transaction_id", "is", null)
+      .gte("event_date", from)
+      .lte("event_date", to)
+      .is("deleted_at", null),
+  ])
+  if (depRes.error) throw depRes.error
+  if (actRes.error) throw actRes.error
+
+  type Agg = { deployments: number; active: number; deposit: number; rent: number; lateFee: number }
+  const map = new Map<string, Agg>()
+  const ensure = (s: string): Agg => {
+    let r = map.get(s)
+    if (!r) { r = { deployments: 0, active: 0, deposit: 0, rent: 0, lateFee: 0 }; map.set(s, r) }
+    return r
+  }
+
+  for (const d of depRes.data ?? []) {
+    const row = d as { status: string; riders: { source: string | null } | null }
+    const a = ensure(row.riders?.source ?? "—")
+    a.deployments += 1
+    if (row.status === "ACTIVE") a.active += 1
+  }
+  for (const e of actRes.data ?? []) {
+    const ev = e as {
+      event_type: string
+      payment_category: string | null
+      amount_inr: number | null
+      deployments: { riders: { source: string | null } | null } | null
+    }
+    const a = ensure(ev.deployments?.riders?.source ?? "—")
+    const amt = Number(ev.amount_inr) || 0
+    if (ev.event_type === "DEPOSIT") a.deposit += amt
+    else if (ev.event_type === "PAYMENT") {
+      if (ev.payment_category === "Late fee") a.lateFee += amt
+      else a.rent += amt
+    }
+  }
+
+  // Known sources first (even if zero), then any extras present.
+  const present = Array.from(map.keys())
+  const ordered = [
+    ...SOURCE_ORDER,
+    ...present.filter((s) => !SOURCE_ORDER.includes(s)).sort(),
+  ]
+
+  const rows: SourceBreakdownRow[] = []
+  const totals = { deployments: 0, active: 0, deposit: 0, rent: 0, lateFee: 0, total: 0 }
+  for (const source of ordered) {
+    const a = map.get(source)
+    if (!a && !SOURCE_ORDER.includes(source)) continue
+    const deployments = a?.deployments ?? 0
+    const active = a?.active ?? 0
+    const deposit = a?.deposit ?? 0
+    const rent = a?.rent ?? 0
+    const lateFee = a?.lateFee ?? 0
+    const total = deposit + rent + lateFee
+    rows.push({ source, deployments, active, deposit, rent, lateFee, total })
+    totals.deployments += deployments
+    totals.active += active
+    totals.deposit += deposit
+    totals.rent += rent
+    totals.lateFee += lateFee
+    totals.total += total
+  }
+
+  return { rows, totals }
+}
