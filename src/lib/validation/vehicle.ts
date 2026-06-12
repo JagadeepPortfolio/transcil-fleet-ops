@@ -19,7 +19,13 @@ export const serviceStatuses = ["Available", "Under Repair", "In Factory"] as co
 export const vehicleUpdateSchema = vehicleCreateSchema.extend({
   vehicle_type_id: z.coerce.number().int().positive("Pick a vehicle type"),
   hub_id: z.coerce.number().int().positive("Pick a hub"),
-  service_status: z.enum(serviceStatuses, { message: "Pick a status" }),
+  // Optional: a disabled Status field (In-Use vehicles) submits nothing, and the
+  // server keeps the existing status in that case.
+  service_status: z
+    .enum(serviceStatuses, { message: "Pick a status" })
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : undefined)),
 })
 
 export type VehicleUpdateInput = z.infer<typeof vehicleUpdateSchema>

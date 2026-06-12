@@ -40,6 +40,21 @@ async function updateVehicle(id: string, formData: FormData) {
   const { data: userRes } = await supabase.auth.getUser()
   const userId = userRes.user?.id
 
+  // Status is locked while the vehicle is In Use (has an active deployment):
+  // keep the existing status and ignore any submitted value.
+  const [{ data: vehRow }, { count: activeCount }] = await Promise.all([
+    supabase.from("vehicles").select("service_status").eq("id", id).maybeSingle(),
+    supabase
+      .from("deployments")
+      .select("id", { count: "exact", head: true })
+      .eq("vehicle_id", id)
+      .eq("status", "ACTIVE")
+      .is("deleted_at", null),
+  ])
+  const currentStatus = (vehRow as { service_status?: string } | null)?.service_status ?? "Available"
+  const isInUse = (activeCount ?? 0) > 0
+  const effectiveStatus = isInUse ? currentStatus : input.service_status ?? currentStatus
+
   const { error } = await supabase
     .from("vehicles")
     .update({
@@ -49,7 +64,7 @@ async function updateVehicle(id: string, formData: FormData) {
       vehicle_type_id: input.vehicle_type_id,
       hub_id: input.hub_id,
       colour: input.colour || null,
-      service_status: input.service_status,
+      service_status: effectiveStatus,
       updated_by: userId,
     })
     .eq("id", id)
@@ -77,7 +92,18 @@ export default async function EditVehiclePage({
   const vehicle = await getVehicle(params.id)
   if (!vehicle) notFound()
 
-  const [types, hubs] = await Promise.all([listVehicleTypes(), listHubs()])
+  const supabase = createClient()
+  const [types, hubs, activeRes] = await Promise.all([
+    listVehicleTypes(),
+    listHubs(),
+    supabase
+      .from("deployments")
+      .select("id", { count: "exact", head: true })
+      .eq("vehicle_id", params.id)
+      .eq("status", "ACTIVE")
+      .is("deleted_at", null),
+  ])
+  const isInUse = (activeRes.count ?? 0) > 0
   const action = updateVehicle.bind(null, params.id)
 
   return (
@@ -149,19 +175,30 @@ export default async function EditVehiclePage({
             name="colour"
             defaultValue={vehicle.colour ?? ""}
           />
-          <SelectField
-            label="Status"
-            name="service_status"
-            required
-            defaultValue={vehicle.service_status ?? "Available"}
-            hint="“In Use” is set automatically when the vehicle has an active deployment."
-          >
-            {serviceStatuses.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </SelectField>
+          {isInUse ? (
+            <Field
+              label="Status"
+              name="service_status_display"
+              defaultValue="In Use"
+              inputProps={{ disabled: true }}
+              uppercase={false}
+              hint="Locked — the status can’t be changed while the vehicle is deployed."
+            />
+          ) : (
+            <SelectField
+              label="Status"
+              name="service_status"
+              required
+              defaultValue={vehicle.service_status ?? "Available"}
+              hint="“In Use” is set automatically when the vehicle has an active deployment."
+            >
+              {serviceStatuses.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </SelectField>
+          )}
           <div className="flex items-center justify-end gap-3 border-t pt-5">
             <Button variant="ghost" render={<Link href="/admin/vehicles" />}>
               Cancel
