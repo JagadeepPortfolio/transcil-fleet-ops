@@ -123,7 +123,6 @@ export default async function DailyActivityPage({
                 <TableRow>
                   <TableHead>Source</TableHead>
                   <TableHead className="text-right">Deployments</TableHead>
-                  <TableHead className="text-right">Active</TableHead>
                   <TableHead className="text-right">Deposit</TableHead>
                   <TableHead className="text-right">Weekly rent</TableHead>
                   <TableHead className="text-right">Late fee</TableHead>
@@ -135,7 +134,6 @@ export default async function DailyActivityPage({
                   <TableRow key={r.source}>
                     <TableCell className="font-medium">{r.source}</TableCell>
                     <TableCell className="text-right tabular-nums">{r.deployments}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.active}</TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.deposit)}</TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.rent)}</TableCell>
                     <TableCell className="text-right tabular-nums">{inr(r.lateFee)}</TableCell>
@@ -145,7 +143,6 @@ export default async function DailyActivityPage({
                 <TableRow className="border-t-2 bg-muted/40 font-semibold">
                   <TableCell>Total</TableCell>
                   <TableCell className="text-right tabular-nums">{bySource.totals.deployments}</TableCell>
-                  <TableCell className="text-right tabular-nums">{bySource.totals.active}</TableCell>
                   <TableCell className="text-right tabular-nums">{inr(bySource.totals.deposit)}</TableCell>
                   <TableCell className="text-right tabular-nums">{inr(bySource.totals.rent)}</TableCell>
                   <TableCell className="text-right tabular-nums">{inr(bySource.totals.lateFee)}</TableCell>
