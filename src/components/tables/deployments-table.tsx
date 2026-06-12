@@ -75,11 +75,6 @@ const columns: ColumnDef<Row>[] = [
     ),
   },
   {
-    accessorKey: "hub_name",
-    header: "Hub",
-    cell: ({ row }) => row.original.hub_name ?? "—",
-  },
-  {
     accessorKey: "deploy_date",
     header: "Deploy",
     cell: ({ row }) => (
