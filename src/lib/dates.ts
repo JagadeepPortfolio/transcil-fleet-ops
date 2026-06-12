@@ -1,4 +1,18 @@
 import { format, parseISO } from "date-fns"
+import { formatInTimeZone } from "date-fns-tz"
+
+const IST = "Asia/Kolkata"
+
+/**
+ * Date + time in IST, e.g. "12 Mar 2026, 4:32 PM". Use for audit timestamps
+ * like `created_at` (full ISO). Falls back to the em dash for null/empty.
+ */
+export function formatDateTime(value?: string | null): string {
+  if (!value) return "—"
+  const d = value.length === 10 ? parseISO(value) : new Date(value)
+  if (Number.isNaN(d.getTime())) return "—"
+  return formatInTimeZone(d, IST, "dd MMM yyyy, h:mm a")
+}
 
 /**
  * Single source of truth for how dates are shown in the UI: "12 Mar 2026".

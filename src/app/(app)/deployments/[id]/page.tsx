@@ -6,7 +6,7 @@ import { getDeployment } from "@/lib/db/deployments"
 import { listActivityForDeployment } from "@/lib/db/activity-log"
 import { listAvailableVehicles } from "@/lib/db/vehicles"
 import { getCurrentRole } from "@/lib/auth/role"
-import { formatDate } from "@/lib/dates"
+import { formatDate, formatDateTime } from "@/lib/dates"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
@@ -237,6 +237,11 @@ export default async function DeploymentDetailPage({
                       <TableRow key={e.id as string}>
                         <TableCell className="text-xs text-muted-foreground">
                           {formatDate(e.event_date as string)}
+                          {e.created_at ? (
+                            <div className="text-[10px] text-muted-foreground/80">
+                              logged {formatDateTime(e.created_at as string)}
+                            </div>
+                          ) : null}
                         </TableCell>
                         <TableCell className="font-medium">
                           {e.event_type as string}
