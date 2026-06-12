@@ -446,9 +446,8 @@ export type SourceBreakdownRow = {
   source: string
   deployments: number
   active: number
-  deposit: number
-  rent: number
-  lateFee: number
+  newCollected: number
+  prevCollected: number
   total: number
 }
 
@@ -462,8 +461,9 @@ const SOURCE_ORDER = ["Individual", "3PL", "Camions"]
 /**
  * Deployments and money collected within [from, to], split by the rider's
  * source. Deployments counted by deploy_date (all statuses, with Active broken
- * out); amounts by event_date, txn-gated, inflows only — same rules as
- * getDailyActivity, just grouped by source instead of by day.
+ * out); collections split into new (payment's deployment started that same day,
+ * deploy_date == event_date) vs previous — same definition as getDailyActivity,
+ * grouped by source instead of by day. Txn-gated, inflows only.
  */
 export async function getDailySourceBreakdown(from: string, to: string): Promise<SourceBreakdown> {
   const supabase = createClient()
@@ -476,7 +476,7 @@ export async function getDailySourceBreakdown(from: string, to: string): Promise
       .is("deleted_at", null),
     supabase
       .from("activity_log")
-      .select("event_type, payment_category, amount_inr, deployments(riders(source))")
+      .select("event_date, amount_inr, deployments(deploy_date, riders(source))")
       .in("event_type", ["PAYMENT", "DEPOSIT"])
       .not("transaction_id", "is", null)
       .gte("event_date", from)
@@ -486,11 +486,11 @@ export async function getDailySourceBreakdown(from: string, to: string): Promise
   if (depRes.error) throw depRes.error
   if (actRes.error) throw actRes.error
 
-  type Agg = { deployments: number; active: number; deposit: number; rent: number; lateFee: number }
+  type Agg = { deployments: number; active: number; newCollected: number; prevCollected: number }
   const map = new Map<string, Agg>()
   const ensure = (s: string): Agg => {
     let r = map.get(s)
-    if (!r) { r = { deployments: 0, active: 0, deposit: 0, rent: 0, lateFee: 0 }; map.set(s, r) }
+    if (!r) { r = { deployments: 0, active: 0, newCollected: 0, prevCollected: 0 }; map.set(s, r) }
     return r
   }
 
@@ -502,18 +502,14 @@ export async function getDailySourceBreakdown(from: string, to: string): Promise
   }
   for (const e of actRes.data ?? []) {
     const ev = e as {
-      event_type: string
-      payment_category: string | null
+      event_date: string
       amount_inr: number | null
-      deployments: { riders: { source: string | null } | null } | null
+      deployments: { deploy_date: string | null; riders: { source: string | null } | null } | null
     }
     const a = ensure(ev.deployments?.riders?.source ?? "—")
     const amt = Number(ev.amount_inr) || 0
-    if (ev.event_type === "DEPOSIT") a.deposit += amt
-    else if (ev.event_type === "PAYMENT") {
-      if (ev.payment_category === "Late fee") a.lateFee += amt
-      else a.rent += amt
-    }
+    if (ev.deployments?.deploy_date === ev.event_date) a.newCollected += amt
+    else a.prevCollected += amt
   }
 
   // Known sources first (even if zero), then any extras present.
@@ -524,22 +520,20 @@ export async function getDailySourceBreakdown(from: string, to: string): Promise
   ]
 
   const rows: SourceBreakdownRow[] = []
-  const totals = { deployments: 0, active: 0, deposit: 0, rent: 0, lateFee: 0, total: 0 }
+  const totals = { deployments: 0, active: 0, newCollected: 0, prevCollected: 0, total: 0 }
   for (const source of ordered) {
     const a = map.get(source)
     if (!a && !SOURCE_ORDER.includes(source)) continue
     const deployments = a?.deployments ?? 0
     const active = a?.active ?? 0
-    const deposit = a?.deposit ?? 0
-    const rent = a?.rent ?? 0
-    const lateFee = a?.lateFee ?? 0
-    const total = deposit + rent + lateFee
-    rows.push({ source, deployments, active, deposit, rent, lateFee, total })
+    const newCollected = a?.newCollected ?? 0
+    const prevCollected = a?.prevCollected ?? 0
+    const total = newCollected + prevCollected
+    rows.push({ source, deployments, active, newCollected, prevCollected, total })
     totals.deployments += deployments
     totals.active += active
-    totals.deposit += deposit
-    totals.rent += rent
-    totals.lateFee += lateFee
+    totals.newCollected += newCollected
+    totals.prevCollected += prevCollected
     totals.total += total
   }
 
