@@ -72,6 +72,49 @@ export default async function DailyActivityPage({
       </Card>
 
       <div className="space-y-2">
+        <h2 className="text-sm font-semibold text-muted-foreground">Day by day</h2>
+        <Card className="overflow-hidden p-0">
+          <TableContainer>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Deployments</TableHead>
+                  <TableHead className="text-right">Customers</TableHead>
+                  <TableHead className="text-right">Deposit</TableHead>
+                  <TableHead className="text-right">Weekly rent</TableHead>
+                  <TableHead className="text-right">Late fee</TableHead>
+                  <TableHead className="text-right">Total received</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.date}>
+                    <TableCell className="font-medium">{formatDate(r.date)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.deployments}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.customers}</TableCell>
+                    <TableCell className="text-right tabular-nums">{inr(r.deposit)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{inr(r.rent)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{inr(r.lateFee)}</TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">{inr(r.total)}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="border-t-2 bg-muted/40 font-semibold">
+                  <TableCell>Total</TableCell>
+                  <TableCell className="text-right tabular-nums">{totals.deployments}</TableCell>
+                  <TableCell className="text-right tabular-nums">{totals.customers}</TableCell>
+                  <TableCell className="text-right tabular-nums">{inr(totals.deposit)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{inr(totals.rent)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{inr(totals.lateFee)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{inr(totals.total)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
+      </div>
+
+      <div className="space-y-2">
         <h2 className="text-sm font-semibold text-muted-foreground">By rider source</h2>
         <Card className="overflow-hidden p-0">
           <TableContainer>
@@ -111,49 +154,6 @@ export default async function DailyActivityPage({
               </TableBody>
             </Table>
           </TableContainer>
-        </Card>
-      </div>
-
-      <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-muted-foreground">Day by day</h2>
-        <Card className="overflow-hidden p-0">
-          <TableContainer>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                <TableHead className="text-right">Deployments</TableHead>
-                <TableHead className="text-right">Customers</TableHead>
-                <TableHead className="text-right">Deposit</TableHead>
-                <TableHead className="text-right">Weekly rent</TableHead>
-                <TableHead className="text-right">Late fee</TableHead>
-                <TableHead className="text-right">Total received</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.date}>
-                  <TableCell className="font-medium">{formatDate(r.date)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{r.deployments}</TableCell>
-                  <TableCell className="text-right tabular-nums">{r.customers}</TableCell>
-                  <TableCell className="text-right tabular-nums">{inr(r.deposit)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{inr(r.rent)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{inr(r.lateFee)}</TableCell>
-                  <TableCell className="text-right font-medium tabular-nums">{inr(r.total)}</TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="border-t-2 bg-muted/40 font-semibold">
-                <TableCell>Total</TableCell>
-                <TableCell className="text-right tabular-nums">{totals.deployments}</TableCell>
-                <TableCell className="text-right tabular-nums">{totals.customers}</TableCell>
-                <TableCell className="text-right tabular-nums">{inr(totals.deposit)}</TableCell>
-                <TableCell className="text-right tabular-nums">{inr(totals.rent)}</TableCell>
-                <TableCell className="text-right tabular-nums">{inr(totals.lateFee)}</TableCell>
-                <TableCell className="text-right tabular-nums">{inr(totals.total)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </TableContainer>
         </Card>
       </div>
     </div>
