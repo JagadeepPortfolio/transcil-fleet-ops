@@ -81,10 +81,10 @@ export default async function DailyActivityPage({
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Deployments</TableHead>
                   <TableHead className="text-right">Customers</TableHead>
-                  <TableHead className="text-right">Deposit</TableHead>
-                  <TableHead className="text-right">Weekly rent</TableHead>
-                  <TableHead className="text-right">Late fee</TableHead>
-                  <TableHead className="text-right">Total received</TableHead>
+                  <TableHead className="text-right">Deposit collected</TableHead>
+                  <TableHead className="text-right">Rent collected</TableHead>
+                  <TableHead className="text-right">Late fee collected</TableHead>
+                  <TableHead className="text-right">Total collected</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -134,10 +134,10 @@ export default async function DailyActivityPage({
                 <TableRow>
                   <TableHead>Source</TableHead>
                   <TableHead className="text-right">Deployments</TableHead>
-                  <TableHead className="text-right">Deposit</TableHead>
-                  <TableHead className="text-right">Weekly rent</TableHead>
-                  <TableHead className="text-right">Late fee</TableHead>
-                  <TableHead className="text-right">Total received</TableHead>
+                  <TableHead className="text-right">Deposit collected</TableHead>
+                  <TableHead className="text-right">Rent collected</TableHead>
+                  <TableHead className="text-right">Late fee collected</TableHead>
+                  <TableHead className="text-right">Total collected</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
