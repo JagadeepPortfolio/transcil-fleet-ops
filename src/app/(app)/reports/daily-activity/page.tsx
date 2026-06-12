@@ -81,9 +81,8 @@ export default async function DailyActivityPage({
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Deployments</TableHead>
                   <TableHead className="text-right">Customers</TableHead>
-                  <TableHead className="text-right">Deposit collected</TableHead>
-                  <TableHead className="text-right">Rent collected</TableHead>
-                  <TableHead className="text-right">Late fee collected</TableHead>
+                  <TableHead className="text-right">Collected — new deployments</TableHead>
+                  <TableHead className="text-right">Collected — previous deployments</TableHead>
                   <TableHead className="text-right">Total collected</TableHead>
                 </TableRow>
               </TableHeader>
@@ -104,9 +103,8 @@ export default async function DailyActivityPage({
                       )}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{r.customers}</TableCell>
-                    <TableCell className="text-right tabular-nums">{inr(r.deposit)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{inr(r.rent)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{inr(r.lateFee)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{inr(r.newCollected)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{inr(r.prevCollected)}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">{inr(r.total)}</TableCell>
                   </TableRow>
                 ))}
@@ -114,9 +112,8 @@ export default async function DailyActivityPage({
                   <TableCell>Total</TableCell>
                   <TableCell className="text-right tabular-nums">{totals.deployments}</TableCell>
                   <TableCell className="text-right tabular-nums">{totals.customers}</TableCell>
-                  <TableCell className="text-right tabular-nums">{inr(totals.deposit)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{inr(totals.rent)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{inr(totals.lateFee)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{inr(totals.newCollected)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{inr(totals.prevCollected)}</TableCell>
                   <TableCell className="text-right tabular-nums">{inr(totals.total)}</TableCell>
                 </TableRow>
               </TableBody>

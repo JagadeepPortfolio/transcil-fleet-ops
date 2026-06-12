@@ -336,9 +336,8 @@ export type DailyActivityRow = {
   date: string
   deployments: number
   customers: number
-  deposit: number
-  rent: number
-  lateFee: number
+  newCollected: number
+  prevCollected: number
   total: number
 }
 
@@ -356,11 +355,16 @@ function addDay(d: string): string {
 /**
  * Per-day operations summary for a date range (inclusive), both bounds as
  * YYYY-MM-DD IST business dates:
- *   deployments  — deployments started that day (deploy_date)
- *   customers    — distinct riders deployed that day
- *   deposit/rent/lateFee — money collected that day (event_date), txn-gated,
- *                  matching the money model (transaction_id IS NOT NULL).
- * Inflows only — refunds are excluded.
+ *   deployments    — deployments started that day (deploy_date)
+ *   customers      — distinct riders deployed that day
+ *   newCollected   — money collected that day for deployments that STARTED that
+ *                    day (deploy_date == event_date)
+ *   prevCollected  — money collected that day for deployments started earlier
+ *   total          — newCollected + prevCollected
+ * All amounts txn-gated (transaction_id IS NOT NULL), inflows only (PAYMENT +
+ * DEPOSIT; refunds excluded). The new/previous split clarifies that a day's
+ * collections include ongoing weekly rent from older deployments, not just
+ * that day's new ones.
  */
 export async function getDailyActivity(from: string, to: string): Promise<DailyActivity> {
   const supabase = createClient()
@@ -373,7 +377,7 @@ export async function getDailyActivity(from: string, to: string): Promise<DailyA
       .is("deleted_at", null),
     supabase
       .from("activity_log")
-      .select("event_date, event_type, payment_category, amount_inr")
+      .select("event_date, amount_inr, deployments(deploy_date)")
       .in("event_type", ["PAYMENT", "DEPOSIT"])
       .not("transaction_id", "is", null)
       .gte("event_date", from)
@@ -383,11 +387,11 @@ export async function getDailyActivity(from: string, to: string): Promise<DailyA
   if (depRes.error) throw depRes.error
   if (actRes.error) throw actRes.error
 
-  type Agg = { deployments: number; riders: Set<string>; deposit: number; rent: number; lateFee: number }
+  type Agg = { deployments: number; riders: Set<string>; newCollected: number; prevCollected: number }
   const map = new Map<string, Agg>()
   const ensure = (d: string): Agg => {
     let r = map.get(d)
-    if (!r) { r = { deployments: 0, riders: new Set(), deposit: 0, rent: 0, lateFee: 0 }; map.set(d, r) }
+    if (!r) { r = { deployments: 0, riders: new Set(), newCollected: 0, prevCollected: 0 }; map.set(d, r) }
     return r
   }
 
@@ -398,34 +402,34 @@ export async function getDailyActivity(from: string, to: string): Promise<DailyA
     if (row.rider_id) a.riders.add(row.rider_id)
   }
   for (const e of actRes.data ?? []) {
-    const ev = e as { event_date: string; event_type: string; payment_category: string | null; amount_inr: number | null }
+    const ev = e as {
+      event_date: string
+      amount_inr: number | null
+      deployments: { deploy_date: string | null } | null
+    }
     const a = ensure(ev.event_date)
     const amt = Number(ev.amount_inr) || 0
-    if (ev.event_type === "DEPOSIT") a.deposit += amt
-    else if (ev.event_type === "PAYMENT") {
-      if (ev.payment_category === "Late fee") a.lateFee += amt
-      else a.rent += amt
-    }
+    // "New" = the payment's deployment started on the same day it was collected.
+    if (ev.deployments?.deploy_date === ev.event_date) a.newCollected += amt
+    else a.prevCollected += amt
   }
 
   const rows: DailyActivityRow[] = []
-  const totals = { deployments: 0, customers: 0, deposit: 0, rent: 0, lateFee: 0, total: 0 }
+  const totals = { deployments: 0, customers: 0, newCollected: 0, prevCollected: 0, total: 0 }
   let d = from
   let guard = 0
   while (d <= to && guard < 732) {
     const a = map.get(d)
     const deployments = a?.deployments ?? 0
     const customers = a?.riders.size ?? 0
-    const deposit = a?.deposit ?? 0
-    const rent = a?.rent ?? 0
-    const lateFee = a?.lateFee ?? 0
-    const total = deposit + rent + lateFee
-    rows.push({ date: d, deployments, customers, deposit, rent, lateFee, total })
+    const newCollected = a?.newCollected ?? 0
+    const prevCollected = a?.prevCollected ?? 0
+    const total = newCollected + prevCollected
+    rows.push({ date: d, deployments, customers, newCollected, prevCollected, total })
     totals.deployments += deployments
     totals.customers += customers
-    totals.deposit += deposit
-    totals.rent += rent
-    totals.lateFee += lateFee
+    totals.newCollected += newCollected
+    totals.prevCollected += prevCollected
     totals.total += total
     d = addDay(d)
     guard += 1
