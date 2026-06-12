@@ -244,8 +244,8 @@ function DialogShell({
     <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 transition-opacity" />
-        <Dialog.Popup className="fixed left-1/2 top-[10vh] z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-2xl outline-none data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:scale-95 transition-[opacity,transform]">
-          <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
+        <Dialog.Popup className="fixed left-1/2 top-[8vh] z-50 flex max-h-[84vh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 flex-col overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-2xl outline-none data-[starting-style]:opacity-0 data-[starting-style]:scale-95 data-[ending-style]:opacity-0 data-[ending-style]:scale-95 transition-[opacity,transform]">
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b px-5 py-4">
             <div>
               <Dialog.Title className="text-sm font-semibold">
                 {title}
@@ -268,7 +268,7 @@ function DialogShell({
               }
             />
           </div>
-          <div className="px-5 py-4">{children}</div>
+          <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
