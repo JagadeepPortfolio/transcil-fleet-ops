@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/ui/data-table"
-import { ActionBadge, DeploymentStatusBadge, PayStatusBadge } from "@/components/ui/badge"
+import { ActionBadge, Badge, DeploymentStatusBadge, PayStatusBadge } from "@/components/ui/badge"
 import type { DeploymentEnrichedRow } from "@/lib/db/deployments"
 import { formatDate } from "@/lib/dates"
 
@@ -42,6 +42,16 @@ const columns: ColumnDef<Row>[] = [
         {row.original.rider_name ?? "—"}
       </Link>
     ),
+  },
+  {
+    accessorKey: "rider_source",
+    header: "Source",
+    cell: ({ row }) =>
+      row.original.rider_source ? (
+        <Badge variant="muted">{row.original.rider_source}</Badge>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
   },
   {
     accessorKey: "rider_phone",

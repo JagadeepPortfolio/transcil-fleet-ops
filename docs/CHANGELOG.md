@@ -463,6 +463,27 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 31 — Lock vehicle status while In Use (2026-06-12)
+
+- On the vehicle edit page, **Status can't be changed while the vehicle is In
+  Use** (has an active deployment): the field renders as a read-only "In Use —
+  locked" instead of the dropdown. Vehicles that are not in use (Available /
+  Under Repair / In Factory) remain editable; other fields stay editable always.
+- Server guard in `updateVehicle`: re-checks In Use on submit and keeps the
+  existing `service_status` (ignores any submitted value). `service_status` is
+  now optional in `vehicleUpdateSchema`. No migration.
+
+---
+
+## Session 32 — Rider Source on deployments list (2026-06-12)
+
+- **Migration 0042**: `deployments_enriched` recreated to expose
+  `rider_source` (`r.source`). Deployments list now shows a **Source** column
+  (Individual / 3PL / Camions) as a badge, right after the Rider column.
+  `DeploymentEnrichedRow` gains `rider_source`. No backfill.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

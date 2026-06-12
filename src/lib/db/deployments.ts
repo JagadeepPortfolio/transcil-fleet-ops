@@ -28,6 +28,7 @@ export type DeploymentEnrichedRow = {
   due_date: string
   rider_name: string | null
   rider_phone: string | null
+  rider_source: string | null
   vtd_no: string | null
   vehicle_serial: string | null
   hub_name: string | null
