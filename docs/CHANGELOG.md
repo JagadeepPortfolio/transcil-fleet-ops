@@ -515,6 +515,16 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 35 — days_left blank for terminal deployments (2026-06-14)
+
+- **Migration 0043**: `deployments_enriched.days_left` is now **NULL when status
+  is not ACTIVE/LOCKED** (RETURNED / CANCELLED → "—" in the list), instead of
+  showing a meaningless due-date countdown for already-returned vehicles.
+  ACTIVE/LOCKED still compute; billing-exempt (3PL) stays NULL. View-only change,
+  no UI edit (table already renders `days_left ?? "—"`).
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

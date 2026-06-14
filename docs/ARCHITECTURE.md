@@ -72,7 +72,8 @@ unlock, dashboard. Handoff is a one-way CSV (8 fields). No write-back.
   - `pay_status`: PAID when balance ≤ 0; PARTIAL when any paid; OVERDUE when past
     `due_date`; else PENDING.
   - `days_left`, `action` (LOCK_NOW/AT_RISK/CALL_TODAY/UPCOMING/OK) use IST
-    `(CURRENT_DATE AT TIME ZONE 'Asia/Kolkata')`.
+    `(CURRENT_DATE AT TIME ZONE 'Asia/Kolkata')`. `days_left` is **NULL for
+    terminal deployments** (status not ACTIVE/LOCKED) and billing-exempt (0043).
   - **`billing_exempt` (0038, 3PL deposit-only):** exempt rows get `action='OK'`,
     `days_left=NULL`, and never `OVERDUE` — so they stay out of all alerts.
     `reports.ts` also excludes them from rent figures (Outstanding, overdue,
