@@ -90,6 +90,19 @@ function makeColumns(canManage: boolean): ColumnDef<VehicleRow>[] {
   },
   {
     id: "availability",
+    // Sort key for the derived status: Available first, then In use, then the
+    // out-of-service states. Excluded from text search (numeric rank).
+    accessorFn: (row) =>
+      row.active_rider
+        ? 1
+        : row.service_status === "Available"
+          ? 0
+          : row.service_status === "Under Repair"
+            ? 2
+            : row.service_status === "In Factory"
+              ? 3
+              : 4,
+    enableGlobalFilter: false,
     header: "Availability",
     cell: ({ row }) => {
       const r = row.original
@@ -178,6 +191,7 @@ export function VehiclesTable({
         columns={columns}
         data={filtered}
         filterPlaceholder="Filter by VTD or EC No…"
+        defaultSorting={[{ id: "availability", desc: false }]}
         // Only the true "no vehicles at all" case shows the empty state; a
         // filter that excludes everything falls through to "No rows match".
         emptyState={rows.length === 0 ? emptyState : undefined}

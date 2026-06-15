@@ -35,6 +35,8 @@ export interface DataTableProps<TData, TValue> {
   emptyState?: React.ReactNode
   /** Hide the top filter row. */
   hideFilter?: boolean
+  /** Initial column sort, e.g. [{ id: "availability", desc: false }]. */
+  defaultSorting?: SortingState
   /** Return a URL to navigate to when a row is clicked. Makes the whole row clickable. */
   getRowHref?: (row: TData) => string
   className?: string
@@ -51,11 +53,12 @@ export function DataTable<TData, TValue>({
   filterPlaceholder = "Filter…",
   emptyState,
   hideFilter,
+  defaultSorting,
   getRowHref,
   className,
 }: DataTableProps<TData, TValue>) {
   const router = useRouter()
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sorting, setSorting] = React.useState<SortingState>(defaultSorting ?? [])
   const [globalFilter, setGlobalFilter] = React.useState("")
 
   const table = useReactTable({
