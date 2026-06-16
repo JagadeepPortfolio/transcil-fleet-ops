@@ -563,6 +563,13 @@ were already solid; this session closed the two real gaps.
   - `NEXT_PUBLIC_SENTRY_DSN` set in Vercel **Production** + verified inlined in
     the live bundle. **Preview** env not set (CLI quirk) — add via dashboard if
     preview-branch capture is wanted. Add the same var to `.env.local` for local.
+  - **Gotcha fixed:** because the repo uses a `src/` dir, the instrumentation
+    hook must live at **`src/instrumentation.ts`** (not the project root, where
+    Next silently ignores it). Symptom was server/edge capture being a no-op
+    (`clientInitialized:false`) while client capture worked. Verified end-to-end
+    in production after the move.
+  - `src/app/global-error.tsx` added so React **render** errors are captured too
+    (not just thrown/server errors) — clears the Sentry build warning.
 
 ### Deferred / not done
 
