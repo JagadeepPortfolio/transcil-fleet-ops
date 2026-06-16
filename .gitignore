@@ -60,3 +60,4 @@ supabase/logs
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+scripts/cleanup-test-deployment.mjs
