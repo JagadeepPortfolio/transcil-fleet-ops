@@ -537,6 +537,41 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 37 — Security hardening: headers + Sentry (2026-06-16)
+
+Driven by an evidence-based security review of the app. Core controls (auth,
+RLS, input validation, secret fencing, parameterized queries, private buckets)
+were already solid; this session closed the two real gaps.
+
+### Shipped
+
+- **Security response headers** (`next.config.mjs`): added `headers()` applying
+  HSTS (`max-age=63072000; includeSubDomains; preload`), `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
+  and a restrictive `Permissions-Policy` to every route. Verified live.
+  - **CSP intentionally deferred** — needs tuning against Supabase/Sentry/Next
+    inline bootstrap and must be validated on a preview deploy first.
+- **Sentry error monitoring** — was installed (`@sentry/nextjs`) but never
+  initialized; production errors went uncaptured. Now wired:
+  - `sentry.client.config.ts` / `sentry.server.config.ts` / `sentry.edge.config.ts`
+    + `instrumentation.ts`; `next.config.mjs` wrapped with `withSentryConfig`.
+  - All inits **DSN-guarded** — app is byte-identical when no DSN is set.
+  - `experimental.instrumentationHook: true` (required on Next 14 for
+    `instrumentation.ts` to run; no-op on Next 15+).
+  - Session Replay excluded (bundle weight); source-map upload disabled (works
+    without `SENTRY_AUTH_TOKEN`). Client First Load JS grew ~64 kB (Sentry SDK).
+  - `NEXT_PUBLIC_SENTRY_DSN` set in Vercel **Production** + verified inlined in
+    the live bundle. **Preview** env not set (CLI quirk) — add via dashboard if
+    preview-branch capture is wanted. Add the same var to `.env.local` for local.
+
+### Deferred / not done
+
+- Rate limiting (login/API) — declined for now; Supabase Auth's built-in
+  throttling is the baseline for this internal-only app.
+- CSP, source-map upload, Sentry Preview env — optional follow-ups above.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

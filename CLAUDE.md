@@ -77,7 +77,7 @@ what's shipped in the UI vs what's still planned.
 | Forms            | `react-hook-form` available, but most forms use raw `FormData` + Server Actions |
 | Tables           | TanStack Table v8 via `src/components/ui/data-table.tsx` |
 | Dates            | `date-fns` + `date-fns-tz`                            |
-| Error tracking   | Sentry (wired, DSN optional in `.env`)                |
+| Error tracking   | Sentry — initialized (client/server/edge + `instrumentation.ts`, `withSentryConfig`); DSN-guarded so inert without a DSN. `NEXT_PUBLIC_SENTRY_DSN` set in Vercel Production |
 | Deploy           | Vercel Hobby (manual `npx vercel --prod`)             |
 
 **Explicitly NOT adding:** Drizzle, Prisma, `@tanstack/react-query`,
@@ -344,6 +344,15 @@ git config core.hooksPath .githooks
 Covers all common env file patterns, private key extensions, and
 credential JSON files. `.env.example` with placeholder values is the
 only env file committed.
+
+### Security response headers (`next.config.mjs`)
+
+`next.config.mjs` sets baseline security headers on every route via
+`headers()`: HSTS, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy`, and a restrictive `Permissions-Policy`. **Don't remove
+these.** A `Content-Security-Policy` is **intentionally not set yet** — it
+must be tuned against Supabase/Sentry/Next inline bootstrap and validated on a
+preview deploy before going to production, or it will silently break pages.
 
 ### What agents (and developers) must never do
 
