@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 
 // Security response headers applied to every route. These are the low-risk,
@@ -26,6 +28,11 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Required on Next 14 for instrumentation.ts to run (loads Sentry per
+  // runtime). Stable / no-op on Next 15+.
+  experimental: {
+    instrumentationHook: true,
+  },
   async headers() {
     return [
       {
@@ -36,4 +43,12 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap with Sentry. This injects the client config into the browser bundle and
+// tree-shakes Sentry logging. Source-map upload is disabled — runtime error
+// capture works without it; enable later by adding SENTRY_AUTH_TOKEN + org/
+// project and flipping `sourcemaps.disable`.
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  sourcemaps: { disable: true },
+  disableLogger: true,
+});
