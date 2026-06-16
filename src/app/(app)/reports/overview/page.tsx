@@ -22,10 +22,11 @@ export default async function OperationsOverviewPage({
 }: {
   searchParams: { g?: string; anchor?: string }
 }) {
+  // Default to the current week when no filter is set.
   const g: Granularity =
-    searchParams.g === "week" || searchParams.g === "year"
+    searchParams.g === "month" || searchParams.g === "year"
       ? searchParams.g
-      : "month"
+      : "week"
   const anchor =
     searchParams.anchor && /^\d{4}-\d{2}-\d{2}$/.test(searchParams.anchor)
       ? searchParams.anchor
