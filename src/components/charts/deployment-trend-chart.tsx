@@ -54,13 +54,12 @@ export function DeploymentTrendChart({ data }: { data: TrendPoint[] }) {
         />
         <Bar
           dataKey="individual"
-          fill="var(--color-primary)"
+          fill="var(--color-chart-1)"
           radius={[4, 4, 0, 0]}
         />
         <Bar
           dataKey="threePL"
-          fill="var(--color-primary)"
-          opacity={0.4}
+          fill="var(--color-chart-2)"
           radius={[4, 4, 0, 0]}
         />
       </BarChart>
