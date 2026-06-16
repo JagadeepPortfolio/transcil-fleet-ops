@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react"
 
 import { getCurrentUserContext, TECH_ROLES, INVENTORY_MANAGER_ROLES } from "@/lib/auth/role"
 import { getPartWithStock, setStockLevels } from "@/lib/db/spare-parts"
-import { resolveHubId } from "@/lib/db/hubs"
+import { getDefaultHubId } from "@/lib/db/hubs"
 import { stockAdjustSchema } from "@/lib/validation/repairs"
 import { formatDate } from "@/lib/dates"
 import { Button } from "@/components/ui/button"
@@ -28,7 +28,7 @@ export default async function PartDetailPage({
   const ctx = await getCurrentUserContext()
   if (!ctx || !ctx.role || !TECH_ROLES.includes(ctx.role)) redirect("/dashboard")
   const canManage = INVENTORY_MANAGER_ROLES.includes(ctx.role)
-  const hubId = ctx.hubId ?? (await resolveHubId("NAG"))
+  const hubId = ctx.hubId ?? (await getDefaultHubId())
   if (hubId == null) redirect("/inventory")
 
   const data = await getPartWithStock(params.id, hubId)
@@ -39,7 +39,7 @@ export default async function PartDetailPage({
     "use server"
     const c = await getCurrentUserContext()
     if (!c || !c.role || !INVENTORY_MANAGER_ROLES.includes(c.role)) redirect(`/inventory/${params.id}`)
-    const hid = c.hubId ?? (await resolveHubId("NAG"))
+    const hid = c.hubId ?? (await getDefaultHubId())
     if (hid == null) redirect(`/inventory/${params.id}`)
     const parsed = stockAdjustSchema.safeParse({
       on_hand: formData.get("on_hand"),

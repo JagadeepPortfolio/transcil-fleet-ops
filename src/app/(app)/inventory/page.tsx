@@ -4,7 +4,7 @@ import { Plus, AlertTriangle } from "lucide-react"
 
 import { getCurrentUserContext, TECH_ROLES, INVENTORY_MANAGER_ROLES } from "@/lib/auth/role"
 import { listStockForHub } from "@/lib/db/spare-parts"
-import { resolveHubId } from "@/lib/db/hubs"
+import { getDefaultHubId } from "@/lib/db/hubs"
 import { Card } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,7 @@ export default async function InventoryPage() {
   if (!ctx || !ctx.role || !TECH_ROLES.includes(ctx.role)) redirect("/dashboard")
   const canManage = ctx.role ? INVENTORY_MANAGER_ROLES.includes(ctx.role) : false
 
-  const hubId = ctx.hubId ?? (await resolveHubId("NAG"))
+  const hubId = ctx.hubId ?? (await getDefaultHubId())
   const stock = hubId != null ? await listStockForHub(hubId) : []
   const lowCount = stock.filter((s) => s.low).length
 

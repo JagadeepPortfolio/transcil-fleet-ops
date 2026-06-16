@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react"
 
 import { getCurrentUserContext, INVENTORY_MANAGER_ROLES } from "@/lib/auth/role"
 import { listCategories, createPartWithStock } from "@/lib/db/spare-parts"
-import { resolveHubId } from "@/lib/db/hubs"
+import { getDefaultHubId } from "@/lib/db/hubs"
 import { partCreateSchema } from "@/lib/validation/repairs"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
@@ -35,7 +35,7 @@ async function createPart(formData: FormData) {
     const msg = parsed.error.issues.map((i) => i.message).join("; ")
     redirect(`/inventory/new?error=${encodeURIComponent(msg)}`)
   }
-  const hubId = ctx.hubId ?? (await resolveHubId("NAG"))
+  const hubId = ctx.hubId ?? (await getDefaultHubId())
   if (hubId == null) redirect(`/inventory/new?error=${encodeURIComponent("No hub configured")}`)
 
   try {

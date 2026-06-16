@@ -18,14 +18,16 @@ export async function listHubs() {
   return (data ?? []) as unknown as HubRow[]
 }
 
-/** Hub id for a hub code (e.g. "NAG"), or null. Used as a fallback hub for
- * CMD users who aren't tied to a specific hub (repair/inventory is per-hub). */
-export async function resolveHubId(code: string): Promise<number | null> {
+/** Id of the launch hub (Nagole), resolved by NAME — active hub codes are
+ * opaque legacy ids, so the app resolves Nagole by name everywhere. Used as a
+ * fallback hub for CMD users who aren't tied to a specific hub (inventory and
+ * repairs are per-hub). Returns null if not found. */
+export async function getDefaultHubId(): Promise<number | null> {
   const supabase = createClient()
   const { data } = await supabase
     .from("hubs")
     .select("id")
-    .eq("code", code)
+    .eq("name", "Nagole")
     .is("deleted_at", null)
     .maybeSingle()
   return (data as { id?: number } | null)?.id ?? null
