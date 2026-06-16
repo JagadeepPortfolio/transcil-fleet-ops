@@ -11,130 +11,201 @@ import type { DeploymentEnrichedRow } from "./deployments"
  */
 
 // ─────────────────────────────────────────────────────────────────────────
-//  Monthly summary
+//  Operations overview — deployments trend + counts + collections, by period
 // ─────────────────────────────────────────────────────────────────────────
 
-export type MonthlySummary = {
-  totalDeployments: number
-  activeDeployments: number
-  newDeployments: number
-  returns: number
-  totalVehicles: number
-  deployedVehicles: number
-  utilizationPct: number
-  totalCollected: number
-  totalDue: number
-  collectionPct: number
-  depositsCollected: number
-  depositsRefunded: number
-  overdueCount: number
-  paymentCount: number
+export type Granularity = "week" | "month" | "year"
+
+export type OverviewTrendPoint = {
+  label: string
+  individual: number
+  threePL: number
 }
 
-export async function getMonthlySummary(
-  year: number,
-  month: number
-): Promise<MonthlySummary> {
-  const supabase = createClient()
-  const monthStart = `${year}-${String(month).padStart(2, "0")}-01`
-  const nextMonth = month === 12 ? 1 : month + 1
-  const nextYear = month === 12 ? year + 1 : year
-  const monthEnd = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`
+export type OperationsOverview = {
+  granularity: Granularity
+  anchor: string // normalised to the period start (YYYY-MM-DD)
+  periodLabel: string
+  trend: OverviewTrendPoint[]
+  counts: {
+    newTotal: number
+    newIndividual: number
+    newThreePL: number
+    returned: number
+    replaced: number
+    activeIndividual: number
+    activeThreePL: number
+  }
+  collections: {
+    depositsCollected: number
+    rentCollected: number
+    outstandingDue: number
+  }
+}
 
-  const [deploymentsRes, vehicleRes, activityRes] = await Promise.all([
-    // All deployments from the enriched view
+export async function getOperationsOverview(
+  granularity: Granularity,
+  anchor: string
+): Promise<OperationsOverview> {
+  const supabase = createClient()
+
+  // Calendar-date math in UTC. deploy_date / return_date / event_date are
+  // plain `date` columns (no time), so ISO YYYY-MM-DD strings compare and
+  // bucket correctly without timezone conversion.
+  const toYMD = (d: Date) => d.toISOString().slice(0, 10)
+  const parseYMD = (s: string) => {
+    const [y, m, d] = s.split("-").map(Number)
+    return new Date(Date.UTC(y, m - 1, d))
+  }
+
+  // Start of the period that contains `d`.
+  const periodStart = (g: Granularity, d: Date): Date => {
+    if (g === "week") {
+      const x = new Date(d)
+      const diff = (x.getUTCDay() + 6) % 7 // days since Monday (Mon-start week)
+      x.setUTCDate(x.getUTCDate() - diff)
+      return new Date(Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), x.getUTCDate()))
+    }
+    if (g === "month") return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1))
+    return new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  }
+
+  // The period start `n` periods before `start` (n may be negative for forward).
+  const stepBack = (g: Granularity, start: Date, n: number): Date => {
+    if (g === "week") {
+      const x = new Date(start)
+      x.setUTCDate(x.getUTCDate() - n * 7)
+      return x
+    }
+    if (g === "month")
+      return new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() - n, 1))
+    return new Date(Date.UTC(start.getUTCFullYear() - n, 0, 1))
+  }
+  const nextPeriod = (g: Granularity, start: Date) => stepBack(g, start, -1)
+
+  const labelFor = (g: Granularity, start: Date): string => {
+    if (g === "week")
+      return start.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" })
+    if (g === "month")
+      return start.toLocaleDateString("en-IN", { month: "short", year: "2-digit", timeZone: "UTC" })
+    return String(start.getUTCFullYear())
+  }
+
+  const selStart = periodStart(granularity, parseYMD(anchor))
+  const selEnd = nextPeriod(granularity, selStart)
+  const selStartYMD = toYMD(selStart)
+  const selEndYMD = toYMD(selEnd)
+
+  const periodLabel = (() => {
+    if (granularity === "week") {
+      const last = new Date(selEnd)
+      last.setUTCDate(last.getUTCDate() - 1)
+      const a = selStart.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" })
+      const b = last.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })
+      return `${a} – ${b}`
+    }
+    if (granularity === "month")
+      return selStart.toLocaleDateString("en-IN", { month: "long", year: "numeric", timeZone: "UTC" })
+    return String(selStart.getUTCFullYear())
+  })()
+
+  // Trend window: last N periods ending at (and including) the selected period.
+  const N = granularity === "year" ? 5 : 12
+  const buckets: { label: string; startYMD: string; endYMD: string }[] = []
+  for (let i = N - 1; i >= 0; i--) {
+    const s = stepBack(granularity, selStart, i)
+    const e = nextPeriod(granularity, s)
+    buckets.push({ label: labelFor(granularity, s), startYMD: toYMD(s), endYMD: toYMD(e) })
+  }
+
+  const [deploymentsRes, activityRes] = await Promise.all([
     supabase.from("deployments_enriched").select("*"),
-    // Total vehicles
-    supabase
-      .from("vehicles")
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null),
-    // Activity events in this month
+    // Money/lifecycle events in the SELECTED period only.
     supabase
       .from("activity_log")
-      .select("event_type, amount_inr, transaction_id")
-      .gte("event_date", monthStart)
-      .lt("event_date", monthEnd)
+      .select("event_type, amount_inr, transaction_id, payment_category, event_date")
+      .gte("event_date", selStartYMD)
+      .lt("event_date", selEndYMD)
       .is("deleted_at", null),
   ])
-
   if (deploymentsRes.error) throw deploymentsRes.error
-  if (vehicleRes.error) throw vehicleRes.error
   if (activityRes.error) throw activityRes.error
 
   const deployments = (deploymentsRes.data ?? []) as unknown as DeploymentEnrichedRow[]
   const events = activityRes.data ?? []
-  const totalVehicles = vehicleRes.count ?? 0
 
-  // New deployments created in this month
-  const newDeployments = deployments.filter(
-    (d) => d.deploy_date >= monthStart && d.deploy_date < monthEnd
-  ).length
+  // Trend: deployments by deploy_date per bucket, split Individual vs 3PL.
+  const trend: OverviewTrendPoint[] = buckets.map((b) => {
+    let individual = 0
+    let threePL = 0
+    for (const d of deployments) {
+      if (d.deploy_date >= b.startYMD && d.deploy_date < b.endYMD) {
+        if (d.billing_exempt) threePL++
+        else individual++
+      }
+    }
+    return { label: b.label, individual, threePL }
+  })
 
-  // Returns in this month
-  const returns = deployments.filter(
-    (d) =>
+  // Counts: flows (new/returned) scoped to the selected period; active is a
+  // live snapshot (a state, not a flow). Replaced = REPLACEMENT events in period.
+  let newIndividual = 0
+  let newThreePL = 0
+  let returned = 0
+  let activeIndividual = 0
+  let activeThreePL = 0
+  for (const d of deployments) {
+    if (d.deploy_date >= selStartYMD && d.deploy_date < selEndYMD) {
+      if (d.billing_exempt) newThreePL++
+      else newIndividual++
+    }
+    if (
       d.status === "RETURNED" &&
       d.return_date &&
-      d.return_date >= monthStart &&
-      d.return_date < monthEnd
-  ).length
+      d.return_date >= selStartYMD &&
+      d.return_date < selEndYMD
+    ) {
+      returned++
+    }
+    if (d.status === "ACTIVE" || d.status === "LOCKED") {
+      if (d.billing_exempt) activeThreePL++
+      else activeIndividual++
+    }
+  }
+  const replaced = events.filter((e) => e.event_type === "REPLACEMENT").length
 
-  const activeDeployments = deployments.filter(
-    (d) => d.status === "ACTIVE"
-  ).length
-
-  const deployedVehicles = activeDeployments // one vehicle per active deployment
-  const utilizationPct =
-    totalVehicles > 0
-      ? Math.round((deployedVehicles / totalVehicles) * 100)
-      : 0
-
-  // Payment events this month (with txn ID = counts toward total)
-  const payments = events.filter(
-    (e) => e.event_type === "PAYMENT" && e.transaction_id
-  )
-  const totalCollected = payments.reduce(
-    (sum, e) => sum + (Number(e.amount_inr) || 0),
-    0
-  )
-
-  // Total due across all active deployments (3PL is rent-exempt — excluded)
-  const totalDue = deployments
-    .filter((d) => d.status === "ACTIVE" && !d.billing_exempt)
-    .reduce((sum, d) => sum + (d.total_due ?? 0), 0)
-
-  const collectionPct =
-    totalDue > 0 ? Math.round((totalCollected / totalDue) * 100) : 0
-
-  // Deposits
+  // Collections in the selected period (Individual by nature — 3PL is exempt).
   const depositsCollected = events
     .filter((e) => e.event_type === "DEPOSIT" && e.transaction_id)
-    .reduce((sum, e) => sum + (Number(e.amount_inr) || 0), 0)
-
-  const depositsRefunded = events
-    .filter((e) => e.event_type === "DEPOSIT_REFUND" && e.transaction_id)
-    .reduce((sum, e) => sum + (Number(e.amount_inr) || 0), 0)
-
-  const overdueCount = deployments.filter(
-    (d) => d.status === "ACTIVE" && !d.billing_exempt && d.pay_status === "OVERDUE"
-  ).length
+    .reduce((s, e) => s + (Number(e.amount_inr) || 0), 0)
+  const rentCollected = events
+    .filter(
+      (e) =>
+        e.event_type === "PAYMENT" &&
+        e.transaction_id &&
+        e.payment_category !== "Late fee"
+    )
+    .reduce((s, e) => s + (Number(e.amount_inr) || 0), 0)
+  // Outstanding is a live figure: unpaid balance across active Individual units.
+  const outstandingDue = deployments
+    .filter((d) => (d.status === "ACTIVE" || d.status === "LOCKED") && !d.billing_exempt)
+    .reduce((s, d) => s + Math.max(0, d.balance ?? 0), 0)
 
   return {
-    totalDeployments: deployments.length,
-    activeDeployments,
-    newDeployments,
-    returns,
-    totalVehicles,
-    deployedVehicles,
-    utilizationPct,
-    totalCollected,
-    totalDue,
-    collectionPct,
-    depositsCollected,
-    depositsRefunded,
-    overdueCount,
-    paymentCount: payments.length,
+    granularity,
+    anchor: selStartYMD,
+    periodLabel,
+    trend,
+    counts: {
+      newTotal: newIndividual + newThreePL,
+      newIndividual,
+      newThreePL,
+      returned,
+      replaced,
+      activeIndividual,
+      activeThreePL,
+    },
+    collections: { depositsCollected, rentCollected, outstandingDue },
   }
 }
 

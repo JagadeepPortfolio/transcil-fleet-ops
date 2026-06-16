@@ -1,7 +1,6 @@
 import Link from "next/link"
 import {
   BarChart3,
-  CalendarDays,
   CalendarRange,
   Clock,
   Building2,
@@ -17,6 +16,13 @@ export const metadata = {
 
 const REPORTS = [
   {
+    title: "Operations Overview",
+    description:
+      "Deployments over time (Individual vs 3PL), active / returned / replaced counts, and collections — deposits, weekly rent, outstanding dues. Filter by week, month or year.",
+    href: "/reports/overview",
+    icon: BarChart3,
+  },
+  {
     title: "Most Urgent",
     description:
       "Overdue active deployments (due date crossed) with rider, EC No, due date, days left and mobile number. Download as Excel (CSV) for follow-up calls.",
@@ -29,13 +35,6 @@ const REPORTS = [
       "Per-day deployments, customers, and money collected (deposit + weekly rent + late fee). Filter by date range; defaults to today.",
     href: "/reports/daily-activity",
     icon: CalendarRange,
-  },
-  {
-    title: "Monthly Summary",
-    description:
-      "Revenue, fleet utilization, new deployments vs returns, overdue count. The top-level business snapshot.",
-    href: "/reports/monthly-summary",
-    icon: CalendarDays,
   },
   {
     title: "Outstanding Balances",

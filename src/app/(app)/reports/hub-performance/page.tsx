@@ -5,7 +5,7 @@ import { getHubPerformance } from "@/lib/db/reports"
 import { Card } from "@/components/ui/card"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
-import { MonthPicker } from "../monthly-summary/month-picker"
+import { MonthPicker } from "../_components/month-picker"
 import { HubComparisonChart } from "@/components/charts/hub-comparison-chart"
 import { HubOverdueChart } from "@/components/charts/hub-overdue-chart"
 import {

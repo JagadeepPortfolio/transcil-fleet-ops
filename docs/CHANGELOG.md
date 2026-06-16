@@ -579,6 +579,48 @@ were already solid; this session closed the two real gaps.
 
 ---
 
+## Session 38 — Operations Overview report (replaces Monthly Summary) (2026-06-16)
+
+Replaced the month-locked **Monthly Summary** with a flexible **Operations
+Overview** — one comprehensive snapshot with a Week / Month / Year filter.
+
+### Shipped
+
+- **New report** `reports/overview/` (`/reports/overview`), titled *Operations
+  Overview*. One period filter drives everything:
+  - **Deployments trend** chart (`DeploymentTrendChart`, Recharts grouped bars)
+    — total deployments per period across the last 12 weeks / 12 months / 5
+    years, split **Individual vs 3PL** (`billing_exempt`).
+  - **Fleet movement (selected period):** New (split Ind/3PL), Returned,
+    Replaced (= `REPLACEMENT` events in period), plus **Currently Active**
+    (live snapshot, Ind/3PL).
+  - **Individual collections (selected period):** security deposits collected,
+    weekly rent collected (PAYMENT excl. Late fee), and **Outstanding dues**
+    (live balance across active Individual units).
+- **New `getOperationsOverview(granularity, anchor)`** in `src/lib/db/reports.ts`
+  — UTC calendar-date bucketing (Mon-start weeks), reads `deployments_enriched`
+  + `activity_log`. **No DB migration** (additive, JS aggregation).
+- **New `PeriodPicker`** (`reports/_components/period-picker.tsx`) — Week/Month/
+  Year toggle + prev/next navigator via `?g=&anchor=` URL params.
+- **`MonthPicker` relocated** to `reports/_components/month-picker.tsx` (it was
+  living inside `monthly-summary/` but is shared with Hub Performance — import
+  repointed before deletion).
+
+### Removed
+
+- `reports/monthly-summary/` (page + month-picker), `getMonthlySummary()` +
+  `MonthlySummary` type, and the now-orphaned charts `revenue-bar-chart`,
+  `utilization-donut`, `deployment-flow-chart`.
+
+### Design notes
+
+- "Active" is a point-in-time **state**, shown as a live snapshot; New /
+  Returned / Replaced are **flows** scoped to the selected period.
+- Outstanding dues is a **live** figure (current unpaid balance), not scoped to
+  the period — labelled as such on the page.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
