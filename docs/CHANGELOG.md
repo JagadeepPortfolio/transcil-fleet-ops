@@ -619,6 +619,13 @@ Overview** — one comprehensive snapshot with a Week / Month / Year filter.
 - Outstanding dues is a **live** figure (current unpaid balance), not scoped to
   the period — labelled as such on the page.
 
+### Follow-ups (same session)
+
+- Default filter on load is now **Current Week** (was Month) — anchor defaults
+  to IST today.
+- Trend bars use distinct theme colours instead of black/gray:
+  **Individual = `--color-chart-1`** (orange), **3PL = `--color-chart-2`** (teal).
+
 ---
 
 ## What's next
