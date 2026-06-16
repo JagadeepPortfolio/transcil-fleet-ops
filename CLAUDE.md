@@ -239,6 +239,15 @@ These are load-bearing and easy to break; details in ARCHITECTURE.md:
   no longer blanket CMD-only — new admin pages must self-gate.
 - **Deploy/region:** single Vercel region `bom1` (`vercel.json`) co-located with
   Supabase; deploy is manual `npx vercel --prod` (no Git auto-deploy).
+- **Repair subsystem (0044–0048):** vehicle repairs + per-hub spare-parts inventory.
+  Two load-bearing rules: (1) **`logPartMovement()`** (`src/lib/db/spare-parts.ts`)
+  is the single stock write path — append a `spare_part_movements` row AND update
+  `spare_part_stock.quantity_on_hand` together; never update the quantity directly
+  (mirrors `logActivityEvent`). (2) **`vehicles.service_status` is synced from
+  repair status by a SECURITY DEFINER trigger** (0048) — the app must NOT write
+  `service_status` for repairs (vehicles UPDATE is CMD-only). Roles `TECHNICIAN`/
+  `TECH_SUPERVISOR` (assign via `promote_to_role()`); inventory/repairs RLS is
+  hub-scoped. Repair charge → "Repair charge" payment category (Phase 3, planned).
 
 ---
 

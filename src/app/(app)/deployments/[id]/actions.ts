@@ -325,11 +325,39 @@ export async function returnVehicleAction(
     return { ok: false, error: (e as Error).message }
   }
 
+  // "Vehicle issue" return → open a repair ticket. The DB trigger (0048) then
+  // flips the vehicle to Under Repair. Failure here must not undo the return,
+  // so we surface a warning rather than erroring the whole action.
+  let warning: string | undefined
+  if (parsed.data.reason === "Vehicle issue") {
+    try {
+      const supabase = createClient()
+      const { data: dep } = await supabase
+        .from("deployments")
+        .select("vehicle_id, hub_id")
+        .eq("id", deploymentId)
+        .maybeSingle()
+      const d = dep as { vehicle_id: string; hub_id: number } | null
+      if (d) {
+        const { createRepair } = await import("@/lib/db/repairs")
+        await createRepair({
+          hubId: d.hub_id,
+          vehicleId: d.vehicle_id,
+          deploymentId,
+          issueDetails: parsed.data.notes ?? null,
+        })
+      }
+    } catch (e) {
+      warning = `Return saved, but the repair ticket could not be created: ${(e as Error).message}`
+    }
+  }
+
   revalidatePath(`/deployments/${deploymentId}`)
   revalidatePath("/deployments")
   revalidatePath("/dashboard")
   revalidatePath("/admin/vehicles")
-  return { ok: true }
+  revalidatePath("/repairs")
+  return warning ? { ok: true, error: warning } : { ok: true }
 }
 
 /**

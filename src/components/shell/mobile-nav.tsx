@@ -3,15 +3,18 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, Bike, LayoutDashboard, Search, Truck, Users } from "lucide-react"
+import { BarChart3, Bike, LayoutDashboard, Package, Search, Truck, Users, Wrench } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+
+type Role = "CMD" | "HUB_MANAGER" | "FIELD_STAFF" | "TECHNICIAN" | "TECH_SUPERVISOR"
 
 type NavItem = {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
   cmdOnly?: boolean
+  roles?: Role[]
 }
 
 const ITEMS: NavItem[] = [
@@ -19,6 +22,8 @@ const ITEMS: NavItem[] = [
   { label: "Riders", href: "/riders", icon: Users },
   { label: "Vehicles", href: "/admin/vehicles", icon: Bike },
   { label: "Deploys", href: "/deployments", icon: Truck },
+  { label: "Repairs", href: "/repairs", icon: Wrench },
+  { label: "Stock", href: "/inventory", icon: Package, roles: ["CMD", "TECH_SUPERVISOR", "TECHNICIAN"] },
   { label: "Reports", href: "/reports", icon: BarChart3 },
 ]
 
@@ -27,13 +32,11 @@ const ITEMS: NavItem[] = [
  * with shorter labels so icons stay legible. A dedicated Search tab triggers
  * the global Cmd+K palette so the same muscle memory works on touch.
  */
-export function MobileNav({
-  role,
-}: {
-  role: "CMD" | "HUB_MANAGER" | "FIELD_STAFF"
-}) {
+export function MobileNav({ role }: { role: Role }) {
   const pathname = usePathname() ?? ""
-  const items = ITEMS.filter((n) => !n.cmdOnly || role === "CMD")
+  const items = ITEMS.filter(
+    (n) => (!n.cmdOnly || role === "CMD") && (!n.roles || n.roles.includes(role))
+  )
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 flex h-16 items-stretch border-t bg-background/95 backdrop-blur md:hidden">

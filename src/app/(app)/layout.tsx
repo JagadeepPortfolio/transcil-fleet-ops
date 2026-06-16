@@ -44,6 +44,8 @@ export default async function AppLayout({
     | "CMD"
     | "HUB_MANAGER"
     | "FIELD_STAFF"
+    | "TECHNICIAN"
+    | "TECH_SUPERVISOR"
 
   return (
     <div className="flex min-h-dvh bg-muted/30">

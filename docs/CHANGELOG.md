@@ -628,6 +628,50 @@ Overview** — one comprehensive snapshot with a Week / Month / Year filter.
 
 ---
 
+## Session 39 — Vehicle repair + spare-parts inventory (Phase 1) (2026-06-16)
+
+New subsystem: returns flagged "Vehicle issue" open a repair ticket; technicians
+diagnose, consume per-hub spare parts, and complete repairs. Built in THIS app
+(confirmed boundary call — legacy keeps manufacturing/parts-supply only).
+
+### Schema (migrations 0044–0048; pushed)
+
+- **0044** roles: `TECHNICIAN`, `TECH_SUPERVISOR` added to `app_role` +
+  `promote_to_role(email, role, hub_code)` helper.
+- **0045** inventory: `spare_part_categories`, `spare_parts` (catalog),
+  `spare_part_stock` (per-hub qty + reorder), `spare_part_movements` (ledger).
+- **0046** repairs: `vehicle_repairs` (status machine), `repair_parts_used`,
+  `repair_events` (timeline), `factory_returns` (the client's "RETURN TO FACTORY"
+  sheet — defective cores to Calon, separate from good stock).
+- **0047** seed: 12 categories + ~200 cleaned parts from the client Excel; NAG
+  stock rows at qty 0 (opening stock-take done in UI).
+- **0048** wiring: SECURITY DEFINER trigger syncs `vehicles.service_status`
+  (Under Repair ↔ Available) from repair status — the app never writes
+  service_status directly (vehicles UPDATE is CMD-only). Stock-write RLS relaxed
+  to tech staff (technicians decrement via USED movements).
+
+### App (Phase 1)
+
+- **`logPartMovement()`** (`src/lib/db/spare-parts.ts`) — single stock write path:
+  append a movement AND update `quantity_on_hand` in one call (mirrors
+  `logActivityEvent`). Throws on negative stock.
+- **Return → repair:** `returnVehicleAction` auto-creates a repair ticket when
+  reason = "Vehicle issue" (failure warns, never undoes the return).
+- **`/inventory`** (tech roles): per-hub stock list w/ low-stock flag, add part,
+  stock-take + reorder, movement history.
+- **`/repairs`** (hub staff): list + detail — status transitions, diagnosis +
+  estimate/discount, record parts used (decrements stock), notes, timeline.
+  Mark complete → vehicle back to Available.
+- New roles wired through `getCurrentUserContext()`, sidebar + mobile nav.
+
+### Phase 2 / 3 (next)
+
+- P2: Calon part requests + factory-returns UI + low-stock report.
+- P3: repair charge at return → new "Repair charge" payment category (isolated
+  from rent balance like Late fee) + repair/inventory reporting.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

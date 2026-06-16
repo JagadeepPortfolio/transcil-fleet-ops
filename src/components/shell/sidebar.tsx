@@ -4,15 +4,18 @@ import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, Bike, CircleHelp, LayoutDashboard, Truck, Users } from "lucide-react"
+import { BarChart3, Bike, CircleHelp, LayoutDashboard, Package, Truck, Users, Wrench } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+
+type Role = "CMD" | "HUB_MANAGER" | "FIELD_STAFF" | "TECHNICIAN" | "TECH_SUPERVISOR"
 
 type NavItem = {
   label: string
   href: string
   icon: React.ComponentType<{ className?: string }>
   cmdOnly?: boolean
+  roles?: Role[] // if set, only these roles see the item
 }
 
 const NAV: NavItem[] = [
@@ -20,16 +23,16 @@ const NAV: NavItem[] = [
   { label: "Riders", href: "/riders", icon: Users },
   { label: "Vehicles", href: "/admin/vehicles", icon: Bike },
   { label: "Deployments", href: "/deployments", icon: Truck },
+  { label: "Repairs", href: "/repairs", icon: Wrench },
+  { label: "Inventory", href: "/inventory", icon: Package, roles: ["CMD", "TECH_SUPERVISOR", "TECHNICIAN"] },
   { label: "Reports", href: "/reports", icon: BarChart3 },
 ]
 
-export function Sidebar({
-  role,
-}: {
-  role: "CMD" | "HUB_MANAGER" | "FIELD_STAFF"
-}) {
+export function Sidebar({ role }: { role: Role }) {
   const pathname = usePathname() ?? ""
-  const items = NAV.filter((n) => !n.cmdOnly || role === "CMD")
+  const items = NAV.filter(
+    (n) => (!n.cmdOnly || role === "CMD") && (!n.roles || n.roles.includes(role))
+  )
 
   return (
     <aside className="hidden w-60 shrink-0 border-r bg-sidebar text-sidebar-foreground md:flex md:flex-col">

@@ -18,6 +18,19 @@ export async function listHubs() {
   return (data ?? []) as unknown as HubRow[]
 }
 
+/** Hub id for a hub code (e.g. "NAG"), or null. Used as a fallback hub for
+ * CMD users who aren't tied to a specific hub (repair/inventory is per-hub). */
+export async function resolveHubId(code: string): Promise<number | null> {
+  const supabase = createClient()
+  const { data } = await supabase
+    .from("hubs")
+    .select("id")
+    .eq("code", code)
+    .is("deleted_at", null)
+    .maybeSingle()
+  return (data as { id?: number } | null)?.id ?? null
+}
+
 export async function listLocations() {
   const supabase = createClient()
   const { data, error } = await supabase
