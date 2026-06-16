@@ -201,7 +201,7 @@ export async function getHubPerformance(
 
   const [deploymentsRes, hubsRes, activityRes, vehiclesRes] = await Promise.all([
     supabase.from("deployments_enriched").select("*"),
-    supabase.from("hubs").select("id, name").order("id"),
+    supabase.from("hubs").select("id, name").is("deleted_at", null).order("id"),
     supabase
       .from("activity_log")
       .select("deployment_id, event_type, amount_inr, transaction_id")

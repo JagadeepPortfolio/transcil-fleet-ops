@@ -525,6 +525,18 @@ deploys. Migrations **0014–0027**. Live on Vercel (Mumbai `bom1`).
 
 ---
 
+## Session 36 — Hub Performance: exclude retired hubs (2026-06-16)
+
+- **Bug fix**: `getHubPerformance()` (`src/lib/db/reports.ts`) fetched hubs
+  without the `deleted_at IS NULL` filter, so soft-deleted `[retired]` hubs
+  (migration 0015) showed up as zero-activity rows in the Hub Performance
+  report. Added `.is("deleted_at", null)` to match `listHubs()` and every
+  other hub query. One-line change, no migration.
+- **Side effect (improvement)**: `vehiclesPerHub` divisor now spans only the
+  4 active hubs instead of all hubs, so per-hub utilization % is more accurate.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
