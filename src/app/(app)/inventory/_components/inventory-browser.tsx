@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Search } from "lucide-react"
+import { ChevronDown, ChevronsUpDown, ChevronUp, Search } from "lucide-react"
 
 import {
   Table,
@@ -26,10 +26,21 @@ type Row = {
 /** Search + table for the inventory list. Filters the ~200 parts client-side. */
 export function InventoryBrowser({ stock }: { stock: Row[] }) {
   const [q, setQ] = React.useState("")
+  const [sort, setSort] = React.useState<"asc" | "desc" | null>(null)
   const query = q.trim().toLowerCase()
   const filtered = query
     ? stock.filter((s) => s.part_name.toLowerCase().includes(query))
     : stock
+  const displayed = React.useMemo(() => {
+    if (!sort) return filtered
+    return [...filtered].sort((a, b) =>
+      sort === "asc"
+        ? a.quantity_on_hand - b.quantity_on_hand
+        : b.quantity_on_hand - a.quantity_on_hand
+    )
+  }, [filtered, sort])
+  const cycleSort = () =>
+    setSort((s) => (s === "desc" ? "asc" : s === "asc" ? null : "desc"))
 
   return (
     <div className="space-y-3">
@@ -52,11 +63,27 @@ export function InventoryBrowser({ stock }: { stock: Row[] }) {
             <TableRow>
               <TableHead>Part</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead className="text-right">On hand</TableHead>
+              <TableHead className="text-right">
+                <button
+                  type="button"
+                  onClick={cycleSort}
+                  className="ml-auto inline-flex items-center gap-1 hover:text-foreground"
+                  title="Sort by on-hand"
+                >
+                  On hand
+                  {sort === "asc" ? (
+                    <ChevronUp className="size-3.5" />
+                  ) : sort === "desc" ? (
+                    <ChevronDown className="size-3.5" />
+                  ) : (
+                    <ChevronsUpDown className="size-3.5 opacity-50" />
+                  )}
+                </button>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((s) => (
+            {displayed.map((s) => (
               <TableRow key={s.stock_id}>
                 <TableCell className="font-medium">
                   <Link href={`/inventory/${s.spare_part_id}`} className="hover:underline">
