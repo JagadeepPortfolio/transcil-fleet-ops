@@ -116,3 +116,24 @@ export function LockStatusBadge({
   if (!status) return <span className="text-xs text-muted-foreground">—</span>
   return <Badge variant={LOCK_VARIANT[status] ?? "default"}>{status}</Badge>
 }
+
+// Derived vehicle effective status (vehicles_enriched.effective_status).
+const VEHICLE_VARIANT: Record<
+  string,
+  VariantProps<typeof badgeVariants>["variant"]
+> = {
+  Available: "success",
+  "In Use": "info",
+  Locked: "destructive",
+  "Under Repair": "warning",
+  "In Factory": "muted",
+}
+
+export function VehicleStatusBadge({
+  status,
+}: {
+  status: string | null | undefined
+}) {
+  if (!status) return <span className="text-xs text-muted-foreground">—</span>
+  return <Badge variant={VEHICLE_VARIANT[status] ?? "default"}>{status}</Badge>
+}

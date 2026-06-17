@@ -37,32 +37,18 @@ export async function getVehicle(id: string) {
 }
 
 /**
- * Vehicles available to deploy right now. "Available" is defined as
- * the absence of an ACTIVE, non-deleted deployment for the vehicle.
- * This is the single source of truth — see 0004 partial unique index.
+ * Vehicles available to deploy right now. Uses the derived effective_status from
+ * `vehicles_enriched` (migration 0051): only 'Available' is deployable, which
+ * correctly excludes In Use, **Locked**, Under Repair, and In Factory — a single
+ * source of truth that can't drift.
  */
 export async function listAvailableVehicles() {
   const supabase = createClient()
-  // Two-step query: pull all non-deleted vehicles, then the set of
-  // vehicle_ids that currently have an ACTIVE deployment.
-  const [vehiclesRes, inUseRes] = await Promise.all([
-    supabase
-      .from("vehicles")
-      .select("id, vtd_no, vehicle_id, colour, service_status, vehicle_types(name)")
-      .is("deleted_at", null)
-      .eq("service_status", "Available")
-      .order("vtd_no", { ascending: true }),
-    supabase
-      .from("deployments")
-      .select("vehicle_id")
-      .eq("status", "ACTIVE")
-      .is("deleted_at", null),
-  ])
-  if (vehiclesRes.error) throw vehiclesRes.error
-  if (inUseRes.error) throw inUseRes.error
-  const inUse = new Set((inUseRes.data ?? []).map((d) => (d as { vehicle_id: string }).vehicle_id))
-  // Available = service_status 'Available' (filtered above) AND no active deployment.
-  return (vehiclesRes.data ?? []).filter(
-    (v) => !inUse.has((v as unknown as { id: string }).id)
-  )
+  const { data, error } = await supabase
+    .from("vehicles_enriched")
+    .select("id, vtd_no, vehicle_id, colour, vehicle_type_name")
+    .eq("effective_status", "Available")
+    .order("vtd_no", { ascending: true })
+  if (error) throw error
+  return data ?? []
 }

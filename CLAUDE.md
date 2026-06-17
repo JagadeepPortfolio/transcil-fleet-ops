@@ -151,6 +151,12 @@ stored, so it can't drift. The concurrency guard is the partial unique index
 `deployments_active_vehicle_uniq` (migration 0004). **Do not add a stored column
 that duplicates In-Use/availability.**
 
+The single **derived rollup** for display/deployability is
+`vehicles_enriched.effective_status` (migration 0051): `In Use → Locked → Under
+Repair → In Factory → Available` (priority order), computed from deployments +
+open repairs + `service_status`. `listAvailableVehicles` filters
+`effective_status='Available'`. Still **derived, never stored**.
+
 `vehicles.service_status` (migration 0041, CMD-only) is **not** that duplicate:
 it's a manual condition for **idle** vehicles only — `Available` (default),
 `Under Repair`, `In Factory`. The effective status shown = In Use (if active

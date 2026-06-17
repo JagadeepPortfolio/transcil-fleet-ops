@@ -722,6 +722,23 @@ on-hand driven by receipts + repair usage. **No DB migration.**
 
 ---
 
+## Session 43 — Unified derived vehicle status + EC No on Repairs (2026-06-17)
+
+- **EC No column** added to the Repairs list.
+- **`vehicles_enriched` view (migration 0051)** exposes a single derived
+  **`effective_status`** rolling up the whole lifecycle (priority:
+  `In Use → Locked → Under Repair → In Factory → Available`) from deployments +
+  open repairs + manual service_status. **Derived, not stored** (invariant #2).
+- **Vehicles list** now shows the `effective_status` badge (new `VehicleStatusBadge`),
+  with status-aware sort + filters. Summary counts use it.
+- **`listAvailableVehicles` now uses `effective_status='Available'`** — so Locked,
+  Under Repair and In Factory are all correctly excluded from the deployable pool.
+  This **fixes the Session 41 follow-up** (a LOCKED deployment used to show the
+  vehicle as Available/redeployable).
+- Repair status stays granular on the ticket; the vehicle rolls it up coarsely.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

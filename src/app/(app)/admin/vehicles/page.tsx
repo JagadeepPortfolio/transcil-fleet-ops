@@ -18,9 +18,8 @@ export default async function VehiclesAdminPage() {
 
   const [vehRes, activeRes] = await Promise.all([
     supabase
-      .from("vehicles")
-      .select("id, vtd_no, vehicle_id, chassis_no, colour, service_status, hub_id, created_by_name, vehicle_types(name), hubs(code, name)")
-      .is("deleted_at", null)
+      .from("vehicles_enriched")
+      .select("id, vtd_no, vehicle_id, chassis_no, colour, service_status, hub_id, created_by_name, vehicle_type_name, hub_code, hub_name, effective_status")
       .order("vtd_no", { ascending: true }),
     supabase
       .from("deployments_enriched")
@@ -52,8 +51,10 @@ export default async function VehiclesAdminPage() {
     service_status: string
     hub_id: number | null
     created_by_name: string | null
-    vehicle_types: { name: string } | null
-    hubs: { code: string; name: string } | null
+    vehicle_type_name: string | null
+    hub_code: string | null
+    hub_name: string | null
+    effective_status: string
   }>
 
   const rows: VehicleRow[] = vehicles.map((v) => {
@@ -65,18 +66,17 @@ export default async function VehiclesAdminPage() {
       chassis_no: v.chassis_no,
       colour: v.colour,
       service_status: v.service_status,
+      effective_status: v.effective_status,
       created_by_name: v.created_by_name,
-      type_name: v.vehicle_types?.name ?? null,
-      hub_name: v.hubs ? `${v.hubs.code} — ${v.hubs.name}` : null,
+      type_name: v.vehicle_type_name ?? null,
+      hub_name: v.hub_code ? `${v.hub_code} — ${v.hub_name}` : v.hub_name ?? null,
       active_rider: active?.rider_name ?? null,
       active_days_left: active?.days_left ?? null,
     }
   })
 
-  const inUse = rows.filter((r) => r.active_rider).length
-  const available = rows.filter(
-    (r) => !r.active_rider && r.service_status === "Available"
-  ).length
+  const inUse = rows.filter((r) => r.effective_status === "In Use").length
+  const available = rows.filter((r) => r.effective_status === "Available").length
   const outOfService = rows.length - inUse - available
 
   return (

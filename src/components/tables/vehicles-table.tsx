@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ColumnDef } from "@tanstack/react-table"
 
 import { DataTable } from "@/components/ui/data-table"
-import { Badge } from "@/components/ui/badge"
+import { VehicleStatusBadge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 export type VehicleRow = {
@@ -15,11 +15,21 @@ export type VehicleRow = {
   chassis_no: string | null
   colour: string | null
   service_status: string
+  /** Derived rollup from vehicles_enriched: In Use / Locked / Under Repair / In Factory / Available. */
+  effective_status: string
   type_name: string | null
   hub_name: string | null
   created_by_name: string | null
   active_rider: string | null
   active_days_left: number | null
+}
+
+const STATUS_RANK: Record<string, number> = {
+  Available: 0,
+  "In Use": 1,
+  Locked: 2,
+  "Under Repair": 3,
+  "In Factory": 4,
 }
 
 // Columns depend on canManage: only CMD gets an editable (linked) VTD.
@@ -90,37 +100,22 @@ function makeColumns(canManage: boolean): ColumnDef<VehicleRow>[] {
   },
   {
     id: "availability",
-    // Sort key for the derived status: Available first, then In use, then the
-    // out-of-service states. Excluded from text search (numeric rank).
-    accessorFn: (row) =>
-      row.active_rider
-        ? 1
-        : row.service_status === "Available"
-          ? 0
-          : row.service_status === "Under Repair"
-            ? 2
-            : row.service_status === "In Factory"
-              ? 3
-              : 4,
+    // Sort key for the derived status (Available first). Excluded from text search.
+    accessorFn: (row) => STATUS_RANK[row.effective_status] ?? 5,
     enableGlobalFilter: false,
-    header: "Availability",
+    header: "Status",
     cell: ({ row }) => {
       const r = row.original
-      if (r.active_rider) {
-        return (
-          <div className="flex items-center gap-2">
-            <Badge variant="destructive">In use</Badge>
+      return (
+        <div className="flex items-center gap-2">
+          <VehicleStatusBadge status={r.effective_status} />
+          {r.effective_status === "In Use" && r.active_rider ? (
             <span className="text-xs text-muted-foreground">
               {r.active_rider} · {r.active_days_left ?? "—"}d left
             </span>
-          </div>
-        )
-      }
-      if (r.service_status === "Under Repair")
-        return <Badge variant="warning">Under Repair</Badge>
-      if (r.service_status === "In Factory")
-        return <Badge variant="info">In Factory</Badge>
-      return <Badge variant="success">Available</Badge>
+          ) : null}
+        </div>
+      )
     },
   },
   ]
@@ -149,11 +144,9 @@ export function VehiclesTable({
 
   const columns = React.useMemo(() => makeColumns(canManage), [canManage])
 
-  // "In use" = has an active rider (derived). "Available" = no active rider AND
-  // service status Available (Under Repair / In Factory are excluded).
-  const isInUse = (r: VehicleRow) => !!r.active_rider
-  const isAvailable = (r: VehicleRow) =>
-    !r.active_rider && r.service_status === "Available"
+  // Derived from the single effective_status rollup.
+  const isInUse = (r: VehicleRow) => r.effective_status === "In Use"
+  const isAvailable = (r: VehicleRow) => r.effective_status === "Available"
   const filtered = React.useMemo(() => {
     if (availability === "all") return rows
     return rows.filter((r) => (availability === "in_use" ? isInUse(r) : isAvailable(r)))
