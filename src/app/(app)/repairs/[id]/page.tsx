@@ -1,10 +1,10 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, X } from "lucide-react"
 
 import { getCurrentUserContext, TECH_ROLES } from "@/lib/auth/role"
-import { getRepair, updateRepairStatus, updateRepairDetails, addRepairNote, addPartUsed } from "@/lib/db/repairs"
+import { getRepair, updateRepairStatus, updateRepairDetails, addRepairNote, addPartUsed, removePartUsed } from "@/lib/db/repairs"
 import { listStockForHub } from "@/lib/db/spare-parts"
 import {
   REPAIR_STATUSES,
@@ -95,11 +95,31 @@ export default async function RepairDetailPage({
     const p = partUsedSchema.safeParse({
       spare_part_id: formData.get("spare_part_id"),
       quantity: formData.get("quantity"),
+      serial_no: formData.get("serial_no") || undefined,
       notes: formData.get("notes") || undefined,
     })
     if (!p.success) fail(params.id, p.error.issues[0].message)
     try {
-      await addPartUsed({ repairId: params.id, sparePartId: p.data.spare_part_id, quantity: p.data.quantity, notes: p.data.notes })
+      await addPartUsed({
+        repairId: params.id,
+        sparePartId: p.data.spare_part_id,
+        quantity: p.data.quantity,
+        serialNo: p.data.serial_no,
+        notes: p.data.notes,
+      })
+    } catch (e) {
+      fail(params.id, (e as Error).message)
+    }
+    finish(params.id)
+  }
+
+  async function removePart(formData: FormData) {
+    "use server"
+    await ensureTech(params.id)
+    const partUsedId = String(formData.get("part_used_id") ?? "")
+    if (!partUsedId) fail(params.id, "Missing part record")
+    try {
+      await removePartUsed(partUsedId)
     } catch (e) {
       fail(params.id, (e as Error).message)
     }
@@ -199,7 +219,7 @@ export default async function RepairDetailPage({
 
           <Card>
             <form action={addPart} className="flex flex-wrap items-end gap-3 p-5">
-              <div className="min-w-[200px] flex-[2]">
+              <div className="min-w-[180px] flex-[2]">
                 <label className={label} htmlFor="spare_part_id">Record part used</label>
                 <select id="spare_part_id" name="spare_part_id" className={field} required defaultValue="">
                   <option value="" disabled>Select a part in stock…</option>
@@ -210,11 +230,15 @@ export default async function RepairDetailPage({
                   ))}
                 </select>
               </div>
-              <div className="w-24">
+              <div className="w-20">
                 <label className={label} htmlFor="quantity">Qty</label>
                 <input id="quantity" name="quantity" type="number" min={1} defaultValue={1} className={field} />
               </div>
-              <Button type="submit">Add part</Button>
+              <div className="w-36">
+                <label className={label} htmlFor="serial_no">Serial no. (opt)</label>
+                <input id="serial_no" name="serial_no" className={field} />
+              </div>
+              <Button type="submit">Record</Button>
             </form>
             {stock.length === 0 ? (
               <p className="px-5 pb-4 text-[11px] text-muted-foreground">No parts in stock at this hub.</p>
@@ -230,12 +254,28 @@ export default async function RepairDetailPage({
             <div className="p-4 text-sm text-muted-foreground">None recorded.</div>
           ) : (
             parts.map((p) => (
-              <div key={p.id} className="flex items-center justify-between p-3 text-sm">
+              <div key={p.id} className="flex items-center justify-between gap-3 p-3 text-sm">
                 <span>
                   {p.spare_parts?.name ?? "—"}
+                  {p.serial_no ? <span className="text-muted-foreground"> · S/N {p.serial_no}</span> : null}
                   {p.notes ? <span className="text-muted-foreground"> · {p.notes}</span> : null}
                 </span>
-                <span className="font-mono tabular-nums">×{p.quantity}</span>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono tabular-nums">×{p.quantity}</span>
+                  {isTech && !closed ? (
+                    <form action={removePart}>
+                      <input type="hidden" name="part_used_id" value={p.id} />
+                      <button
+                        type="submit"
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Remove part (restock)"
+                        title="Remove (restocks inventory)"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </form>
+                  ) : null}
+                </div>
               </div>
             ))
           )}

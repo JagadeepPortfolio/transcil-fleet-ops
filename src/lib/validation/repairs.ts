@@ -41,6 +41,7 @@ export const stockAdjustSchema = z.object({
 export const partUsedSchema = z.object({
   spare_part_id: dbUuid("Select a part"),
   quantity: intPos,
+  serial_no: z.string().trim().optional(),
   notes: z.string().trim().optional(),
 })
 

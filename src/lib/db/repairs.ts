@@ -60,7 +60,7 @@ export async function getRepair(id: string) {
       .maybeSingle(),
     supabase
       .from("repair_parts_used")
-      .select("id, quantity, notes, created_at, created_by_name, spare_parts(name, unit)")
+      .select("id, quantity, serial_no, notes, created_at, created_by_name, spare_parts(name, unit)")
       .eq("repair_id", id)
       .is("deleted_at", null)
       .order("created_at", { ascending: true }),
@@ -96,6 +96,7 @@ export async function getRepair(id: string) {
     parts: (partsRes.data ?? []) as unknown as {
       id: string
       quantity: number
+      serial_no: string | null
       notes: string | null
       created_at: string
       created_by_name: string | null
@@ -204,6 +205,7 @@ export async function addPartUsed(input: {
   repairId: string
   sparePartId: string
   quantity: number
+  serialNo?: string
   notes?: string
 }) {
   const supabase = createClient()
@@ -232,6 +234,7 @@ export async function addPartUsed(input: {
     repair_id: input.repairId,
     spare_part_id: input.sparePartId,
     quantity: input.quantity,
+    serial_no: input.serialNo ?? null,
     notes: input.notes ?? null,
   })
   if (insErr) throw insErr
@@ -247,6 +250,54 @@ export async function addPartUsed(input: {
   })
 
   await logRepairEvent(input.repairId, "PART_USED", {
-    note: `Used ${input.quantity} × ${partName}`,
+    note: `Used ${input.quantity} × ${partName}${input.serialNo ? ` (S/N ${input.serialNo})` : ""}`,
+  })
+}
+
+/** Remove a mistakenly-recorded part → soft-delete the line and restock inventory. */
+export async function removePartUsed(repairPartUsedId: string) {
+  const supabase = createClient()
+  const { data: row, error: rowErr } = await supabase
+    .from("repair_parts_used")
+    .select("id, repair_id, spare_part_id, quantity, spare_parts(name)")
+    .eq("id", repairPartUsedId)
+    .is("deleted_at", null)
+    .maybeSingle()
+  if (rowErr) throw rowErr
+  const r = row as unknown as
+    | { id: string; repair_id: string; spare_part_id: string; quantity: number; spare_parts: { name: string } | null }
+    | null
+  if (!r) throw new Error("Part record not found")
+
+  const { data: rep } = await supabase
+    .from("vehicle_repairs")
+    .select("hub_id, status")
+    .eq("id", r.repair_id)
+    .maybeSingle()
+  const repair = rep as { hub_id: number; status: RepairStatus } | null
+  if (!repair) throw new Error("Repair not found")
+  if (repair.status === "COMPLETED" || repair.status === "CANCELLED") {
+    throw new Error("Cannot edit parts on a closed repair")
+  }
+
+  // Soft-delete the line.
+  const { error: delErr } = await supabase
+    .from("repair_parts_used")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", r.id)
+  if (delErr) throw delErr
+
+  // Restock: compensating movement that reverses the original USED deduction.
+  await logPartMovement({
+    hubId: repair.hub_id,
+    partId: r.spare_part_id,
+    type: "ADJUST",
+    quantityDelta: r.quantity,
+    repairId: r.repair_id,
+    reason: "Reversed: part-used removed",
+  })
+
+  await logRepairEvent(r.repair_id, "PART_REMOVED", {
+    note: `Removed ${r.quantity} × ${r.spare_parts?.name ?? "part"} (restocked)`,
   })
 }

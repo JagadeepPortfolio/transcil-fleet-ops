@@ -739,6 +739,19 @@ on-hand driven by receipts + repair usage. **No DB migration.**
 
 ---
 
+## Session 44 — Record-part-used enhancements (2026-06-17)
+
+- **Migration 0052:** `repair_parts_used.serial_no` (optional) + an UPDATE RLS
+  policy (needed for soft-delete).
+- **Record** — renamed the "Add part" button to **Record**; added an optional
+  **serial no** field per fitted part (traceability of the installed unit).
+- **Remove a recorded part** — each parts-used row now has an **✕** that
+  soft-deletes the line, **restocks inventory** (compensating `+qty` movement),
+  and logs a "Part removed (restocked)" timeline entry. Tech staff, open repairs only.
+- Dropdown unchanged: shows only parts with stock > 0 at the repair's hub.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
