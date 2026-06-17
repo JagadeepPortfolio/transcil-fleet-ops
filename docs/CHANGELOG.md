@@ -694,6 +694,21 @@ on-hand driven by receipts + repair usage. **No DB migration.**
 
 ---
 
+## Session 41 — Fix: UNLOCK left deployment stuck LOCKED (2026-06-17)
+
+- **Bug:** `logActivityEvent` UNLOCK only reset `lock_status='Unlocked'` but never
+  restored `status` to `ACTIVE` (LOCK had set `status='LOCKED'`). So after an
+  unlock the deployment stayed LOCKED, and the vehicle wrongly read as Available
+  (In-Use derives from `status='ACTIVE'`). Reported on DEP-2026-18.
+- **Fix:** UNLOCK now also sets `patch.status = "ACTIVE"`. One-off data
+  correction applied to the single stuck record (DEP-2026-18 → ACTIVE).
+- **Known follow-up (not fixed):** while a deployment is *legitimately* LOCKED,
+  the vehicle still shows Available and isn't excluded from `listAvailableVehicles`
+  / the active-vehicle unique index (both key on `ACTIVE` only). Consider treating
+  LOCKED as in-use too.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

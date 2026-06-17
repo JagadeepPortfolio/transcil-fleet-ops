@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase/server"
  *                    charger_cable_number for verification
  *   REMINDER_CALL    call_status, call_notes
  *   LOCK             lock_status='Locked', lock_date
- *   UNLOCK           lock_status='Unlocked'
+ *   UNLOCK           lock_status='Unlocked', status='ACTIVE'
  *   DEPLOY_DATE_EDIT deploy_date → newDate (due_date auto via GENERATED col);
  *                    old/new dates + reason stored on the activity_log row;
  *                    also shifts the initial PAYMENT/DEPOSIT rows dated on the
@@ -215,6 +215,10 @@ export async function logActivityEvent(
       break
     case "UNLOCK":
       patch.lock_status = "Unlocked"
+      // Restore the deployment to ACTIVE — LOCK had set status='LOCKED', so
+      // without this the deployment stays stuck LOCKED after an unlock (and the
+      // vehicle wrongly reads as available since In-Use derives from ACTIVE).
+      patch.status = "ACTIVE"
       break
     case "DEPLOY_DATE_EDIT":
       // due_date is a GENERATED column → recalculates from the new deploy_date.
