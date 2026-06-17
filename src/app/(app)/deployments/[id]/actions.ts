@@ -181,7 +181,7 @@ export async function replaceVehicleAction(
   const [deploymentRes, newVehicleRes] = await Promise.all([
     supabase
       .from("deployments")
-      .select("vehicle_id, vehicles(id, vtd_no)")
+      .select("vehicle_id, hub_id, vehicles(id, vtd_no)")
       .eq("id", deploymentId)
       .maybeSingle(),
     supabase
@@ -198,16 +198,18 @@ export async function replaceVehicleAction(
 
   const dep = deploymentRes.data as {
     vehicle_id: string
+    hub_id: number
     vehicles: { id: string; vtd_no: string } | null
   }
   const newVehicle = newVehicleRes.data as { id: string; vtd_no: string }
+  const oldVehicleId = dep.vehicles?.id ?? dep.vehicle_id
 
   try {
     const changeBattery = parsed.data.battery_mode === "Change"
     await logActivityEvent(deploymentId, {
       type: "REPLACEMENT",
       eventDate: parsed.data.event_date,
-      oldVehicleId: dep.vehicles?.id ?? dep.vehicle_id,
+      oldVehicleId,
       newVehicleId: newVehicle.id,
       oldVtd: dep.vehicles?.vtd_no ?? "—",
       newVtd: newVehicle.vtd_no,
@@ -232,10 +234,29 @@ export async function replaceVehicleAction(
     return { ok: false, error: msg }
   }
 
+  // "Vehicle Issue" replacement → send the replaced (old) vehicle into the repair
+  // flow. The 0048 trigger then flips it to Under Repair. Don't fail the
+  // replacement if ticket creation hiccups — surface a warning instead.
+  let warning: string | undefined
+  if (parsed.data.reason === "Vehicle Issue") {
+    try {
+      const { createRepair } = await import("@/lib/db/repairs")
+      await createRepair({
+        hubId: dep.hub_id,
+        vehicleId: oldVehicleId,
+        deploymentId,
+        issueDetails: parsed.data.notes ?? "Replaced — vehicle issue",
+      })
+    } catch (e) {
+      warning = `Vehicle replaced, but the repair ticket could not be created: ${(e as Error).message}`
+    }
+  }
+
   revalidatePath(`/deployments/${deploymentId}`)
   revalidatePath("/deployments")
   revalidatePath("/admin/vehicles")
-  return { ok: true }
+  revalidatePath("/repairs")
+  return warning ? { ok: true, error: warning } : { ok: true }
 }
 
 /**

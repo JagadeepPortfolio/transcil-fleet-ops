@@ -752,6 +752,19 @@ on-hand driven by receipts + repair usage. **No DB migration.**
 
 ---
 
+## Session 45 — Replace-vehicle: Vehicle Issue → old vehicle to repair (2026-06-17)
+
+- **Replace vehicle** reason dropdown trimmed to 3: **No reason specified**,
+  **Vehicle Issue**, **Others** (was the RETURN_REASONS list).
+- On submit with **Vehicle Issue**, the replaced (old) vehicle is auto-sent to
+  the repair flow (`createRepair` → 0048 trigger flips it to Under Repair, shows
+  in Repairs). Other reasons just free the old vehicle (Available), as before.
+- Also: part-detail **stock-movement log shows the EC No / VTD** for
+  "Used in repair" rows (joins movement → repair → vehicle).
+- No migration.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

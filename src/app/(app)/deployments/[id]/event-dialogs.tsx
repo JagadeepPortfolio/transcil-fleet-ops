@@ -13,7 +13,7 @@ import {
   SelectField,
   TextareaField,
 } from "@/components/ui/form-fields"
-import { CALL_OUTCOMES, PAYMENT_MODES, paymentCategories, RETURN_REASONS, RETURN_REASONS_FULL } from "@/lib/validation/activity"
+import { CALL_OUTCOMES, PAYMENT_MODES, paymentCategories, RETURN_REASONS_FULL } from "@/lib/validation/activity"
 import { rentalTypes } from "@/lib/validation/deployment"
 import {
   type ActionState,
@@ -666,12 +666,12 @@ function ReplacementDialog({
         </SelectField>
         <SelectField label="Reason" name="reason">
           <option value="">No reason specified</option>
-          {RETURN_REASONS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
+          <option value="Vehicle Issue">Vehicle Issue</option>
+          <option value="Others">Others</option>
         </SelectField>
+        <p className="text-[11px] text-muted-foreground">
+          Choosing <strong>Vehicle Issue</strong> sends the replaced vehicle into the repair flow.
+        </p>
 
         {/* Carries the battery type so the server requires the right fields. */}
         <input type="hidden" name="battery_type" value={batteryType ?? "Single"} />
