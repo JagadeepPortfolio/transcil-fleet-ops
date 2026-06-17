@@ -783,6 +783,16 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 47 — Repairs "Reported from" column (2026-06-18)
+
+- Repairs list gains a **Reported from** column showing the originating
+  deployment code (`DEP-…`, linked) when the repair was deployment-initiated
+  (return / replace-with-issue / minor repair); **blank** otherwise (e.g. a
+  vehicle manually marked Under Repair). `listRepairs` joins
+  `deployments(deployment_code)`; no migration.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
