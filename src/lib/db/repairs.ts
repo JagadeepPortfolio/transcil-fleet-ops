@@ -16,13 +16,15 @@ export type RepairListRow = {
   vehicle_id: string
   vtd_no: string | null
   ec_no: string | null
+  deployment_id: string | null
+  deployment_code: string | null
 }
 
 export async function listRepairs(): Promise<RepairListRow[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from("vehicle_repairs")
-    .select("id, status, issue_details, reported_at, completed_at, vehicle_id, vehicles(vtd_no, vehicle_id)")
+    .select("id, status, issue_details, reported_at, completed_at, vehicle_id, deployment_id, vehicles(vtd_no, vehicle_id), deployments(deployment_code)")
     .is("deleted_at", null)
     .order("reported_at", { ascending: false })
   if (error) throw error
@@ -33,7 +35,9 @@ export async function listRepairs(): Promise<RepairListRow[]> {
     reported_at: string
     completed_at: string | null
     vehicle_id: string
+    deployment_id: string | null
     vehicles: { vtd_no: string | null; vehicle_id: string | null } | null
+    deployments: { deployment_code: string | null } | null
   }
   return ((data ?? []) as unknown as Raw[]).map((r) => ({
     id: r.id,
@@ -44,6 +48,8 @@ export async function listRepairs(): Promise<RepairListRow[]> {
     vehicle_id: r.vehicle_id,
     vtd_no: r.vehicles?.vtd_no ?? null,
     ec_no: r.vehicles?.vehicle_id ?? null,
+    deployment_id: r.deployment_id,
+    deployment_code: r.deployments?.deployment_code ?? null,
   }))
 }
 
