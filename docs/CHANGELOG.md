@@ -709,6 +709,19 @@ on-hand driven by receipts + repair usage. **No DB migration.**
 
 ---
 
+## Session 42 — Under-Repair vehicles now auto-create repair tickets (2026-06-17)
+
+- **Issue:** vehicles set to `service_status='Under Repair'` *manually* (admin edit)
+  never created a `vehicle_repairs` ticket — only the "Vehicle issue" return flow
+  did — so the Repairs screen was empty despite 8 Under-Repair vehicles.
+- **Migration 0050:** SECURITY DEFINER trigger on `vehicles` creates a `REPORTED`
+  ticket whenever a vehicle becomes "Under Repair" and has no open repair
+  (loop-safe with 0048's reverse sync). Backfilled the 8 existing Under-Repair
+  vehicles. No reverse sync — manually reverting to Available leaves an open
+  ticket (finish via "Mark complete"). DB-only; no app change.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
