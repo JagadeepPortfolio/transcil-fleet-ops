@@ -48,7 +48,8 @@ export default async function RepairsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Vehicle</TableHead>
+              <TableHead>Vehicle (VTD)</TableHead>
+              <TableHead>EC No</TableHead>
               <TableHead>Issue</TableHead>
               <TableHead>Reported</TableHead>
               <TableHead className="text-right">Status</TableHead>
@@ -59,9 +60,10 @@ export default async function RepairsPage() {
               <TableRow key={r.id}>
                 <TableCell className="font-medium">
                   <Link href={`/repairs/${r.id}`} className="hover:underline">
-                    {r.vtd_no ?? r.ec_no ?? "—"}
+                    {r.vtd_no ?? "—"}
                   </Link>
                 </TableCell>
+                <TableCell className="text-muted-foreground">{r.ec_no ?? "—"}</TableCell>
                 <TableCell className="max-w-xs truncate text-muted-foreground">
                   {r.issue_details ?? "—"}
                 </TableCell>
@@ -75,7 +77,7 @@ export default async function RepairsPage() {
             ))}
             {repairs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
                   No repairs yet. A repair ticket is created automatically when a vehicle is
                   returned with reason &ldquo;Vehicle issue&rdquo;.
                 </TableCell>
