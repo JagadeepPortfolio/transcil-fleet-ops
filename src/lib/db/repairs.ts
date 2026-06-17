@@ -157,6 +157,64 @@ export async function createRepair(input: {
   return id
 }
 
+/**
+ * On-the-spot minor repair under an ACTIVE deployment. Creates a repair that is
+ * born COMPLETED + is_minor (so it never enters the open queue and the 0048
+ * trigger leaves the vehicle In Use), records any parts used (decrements stock),
+ * and returns the repair id. Caller logs the MINOR_REPAIR timeline event.
+ */
+export async function logMinorRepair(input: {
+  deploymentId: string
+  hubId: number
+  vehicleId: string
+  description: string
+  parts: { sparePartId: string; quantity: number; serialNo?: string }[]
+}): Promise<string> {
+  const supabase = createClient()
+  const { data: userRes } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from("vehicle_repairs")
+    .insert({
+      hub_id: input.hubId,
+      vehicle_id: input.vehicleId,
+      deployment_id: input.deploymentId,
+      issue_details: input.description,
+      diagnosis: input.description,
+      status: "COMPLETED",
+      is_minor: true,
+      reported_by: userRes.user?.id ?? null,
+      completed_at: new Date().toISOString(),
+    })
+    .select("id")
+    .maybeSingle()
+  if (error) throw error
+  const repairId = (data as { id: string }).id
+
+  await logRepairEvent(repairId, "COMPLETED", {
+    toStatus: "COMPLETED",
+    note: `Minor repair: ${input.description}`,
+  })
+
+  for (const p of input.parts) {
+    const { error: insErr } = await supabase.from("repair_parts_used").insert({
+      repair_id: repairId,
+      spare_part_id: p.sparePartId,
+      quantity: p.quantity,
+      serial_no: p.serialNo ?? null,
+    })
+    if (insErr) throw insErr
+    await logPartMovement({
+      hubId: input.hubId,
+      partId: p.sparePartId,
+      type: "USED",
+      quantityDelta: -p.quantity,
+      repairId,
+      reason: "Used in minor repair",
+    })
+  }
+  return repairId
+}
+
 export async function updateRepairStatus(id: string, toStatus: RepairStatus, note?: string) {
   const supabase = createClient()
   const { data: cur } = await supabase

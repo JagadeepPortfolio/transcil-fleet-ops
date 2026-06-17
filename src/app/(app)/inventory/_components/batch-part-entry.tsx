@@ -17,10 +17,14 @@ const field = "w-full rounded-md border border-input bg-background px-3 py-2 tex
  */
 export function BatchPartEntry({
   partNames,
-  withPartNo = false,
+  extra,
+  optional = false,
 }: {
   partNames: string[]
-  withPartNo?: boolean
+  /** Optional third per-row field, e.g. part number (receive) or serial (repair). */
+  extra?: { name: string; label: string }
+  /** When true, rows aren't required (the whole section can be left empty). */
+  optional?: boolean
 }) {
   const [rows, setRows] = React.useState<number[]>([0])
   const nextId = React.useRef(1)
@@ -40,7 +44,7 @@ export function BatchPartEntry({
       <div className="flex items-center gap-2 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
         <div className="flex-1">Part name</div>
         <div className="w-24">Qty</div>
-        {withPartNo ? <div className="w-36">Part no. (opt)</div> : null}
+        {extra ? <div className="w-36">{extra.label}</div> : null}
         <div className="w-8" />
       </div>
 
@@ -50,7 +54,7 @@ export function BatchPartEntry({
             <input
               list="part-options"
               name="name"
-              required
+              required={!optional}
               autoComplete="off"
               className={field}
               placeholder="Start typing…"
@@ -59,9 +63,9 @@ export function BatchPartEntry({
           <div className="w-24">
             <input name="qty" type="number" min={1} defaultValue={1} required className={field} />
           </div>
-          {withPartNo ? (
+          {extra ? (
             <div className="w-36">
-              <input name="partno" className={field} />
+              <input name={extra.name} className={field} />
             </div>
           ) : null}
           <button

@@ -97,6 +97,7 @@ export type ActivityEventInput =
     }
   | { type: "LOCK"; eventDate: string; notes?: string }
   | { type: "UNLOCK"; eventDate: string; notes?: string }
+  | { type: "MINOR_REPAIR"; eventDate: string; notes?: string }
   | {
       type: "DEPLOY_DATE_EDIT"
       eventDate: string
@@ -168,6 +169,8 @@ export async function logActivityEvent(
       break
     case "LOCK":
     case "UNLOCK":
+    case "MINOR_REPAIR":
+      // Timeline-only events — notes/event_date carried by the base payload.
       break
   }
 

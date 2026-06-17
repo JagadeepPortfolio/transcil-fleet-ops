@@ -5,7 +5,8 @@ import { ArrowLeft, StickyNote } from "lucide-react"
 import { getDeployment } from "@/lib/db/deployments"
 import { listActivityForDeployment } from "@/lib/db/activity-log"
 import { listAvailableVehicles } from "@/lib/db/vehicles"
-import { getCurrentRole } from "@/lib/auth/role"
+import { listStockForHub } from "@/lib/db/spare-parts"
+import { getCurrentRole, TECH_ROLES } from "@/lib/auth/role"
 import { formatDate, formatDateTime } from "@/lib/dates"
 
 import { Button } from "@/components/ui/button"
@@ -41,14 +42,18 @@ export default async function DeploymentDetailPage({
   const d = await getDeployment(params.id)
   if (!d) notFound()
 
-  const [log, availableVehicles, role] = await Promise.all([
+  const canAct = d.status === "ACTIVE" || d.status === "LOCKED"
+  const [log, availableVehicles, role, stock] = await Promise.all([
     listActivityForDeployment(params.id),
-    d.status === "ACTIVE" || d.status === "LOCKED"
-      ? listAvailableVehicles()
-      : Promise.resolve([]),
+    canAct ? listAvailableVehicles() : Promise.resolve([]),
     getCurrentRole(),
+    canAct ? listStockForHub(d.hub_id) : Promise.resolve([]),
   ])
   const isCmd = role === "CMD"
+  const isTech = !!role && TECH_ROLES.includes(role)
+  const stockPartNames = (stock as Array<{ part_name: string; quantity_on_hand: number }>)
+    .filter((s) => s.quantity_on_hand > 0)
+    .map((s) => s.part_name)
 
   const inr = (v: number | null | undefined) =>
     v != null ? `₹${Number(v).toLocaleString("en-IN")}` : "—"
@@ -104,6 +109,8 @@ export default async function DeploymentDetailPage({
                     colour: v.colour,
                   }))}
                   isCmd={isCmd}
+                  canLogRepair={isTech}
+                  stockPartNames={stockPartNames}
                   deployDate={d.deploy_date}
                   batteryType={d.battery_type}
                   issuedBattery={d.battery_number}

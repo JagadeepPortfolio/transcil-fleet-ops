@@ -119,7 +119,7 @@ export default async function ReceivePage({ searchParams }: { searchParams: { er
             <label className={label} htmlFor="received_date">Received date</label>
             <input id="received_date" name="received_date" type="date" defaultValue={istToday()} className={field} />
           </div>
-          <BatchPartEntry partNames={parts.map((p) => p.name)} withPartNo />
+          <BatchPartEntry partNames={parts.map((p) => p.name)} extra={{ name: "partno", label: "Part no. (opt)" }} />
           <div className="flex items-center justify-end gap-3 border-t pt-5">
             <Button variant="ghost" render={<Link href="/inventory" />}>Cancel</Button>
             <Button type="submit" size="lg">Save receipts</Button>

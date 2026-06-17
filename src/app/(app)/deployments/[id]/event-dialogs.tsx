@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useFormState, useFormStatus } from "react-dom"
 import { Dialog } from "@base-ui/react/dialog"
-import { ArrowLeftRight, CalendarCog, CalendarPlus, CreditCard, Landmark, Lock, LogOut, PhoneCall, Undo2, Unlock, X } from "lucide-react"
+import { ArrowLeftRight, CalendarCog, CalendarPlus, CreditCard, Landmark, Lock, LogOut, PhoneCall, Undo2, Unlock, Wrench, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +13,7 @@ import {
   SelectField,
   TextareaField,
 } from "@/components/ui/form-fields"
+import { BatchPartEntry } from "@/app/(app)/inventory/_components/batch-part-entry"
 import { CALL_OUTCOMES, PAYMENT_MODES, paymentCategories, RETURN_REASONS_FULL } from "@/lib/validation/activity"
 import { rentalTypes } from "@/lib/validation/deployment"
 import {
@@ -27,6 +28,7 @@ import {
   replaceVehicleAction,
   returnVehicleAction,
   unlockVehicleAction,
+  logMinorRepairAction,
 } from "./actions"
 
 /**
@@ -42,7 +44,7 @@ import {
  * render inline in the same form.
  */
 
-type DialogKey = "payment" | "deposit" | "refund" | "call" | "replace" | "extend" | "return" | "lock" | "unlock" | "editDate" | null
+type DialogKey = "payment" | "deposit" | "refund" | "call" | "replace" | "extend" | "return" | "lock" | "unlock" | "editDate" | "minorRepair" | null
 
 export type AvailableVehicle = { id: string; vtd_no: string; ec: string | null; colour: string | null }
 
@@ -81,12 +83,18 @@ export function EventDialogs({
   dailyLateRate = 0,
   rentOutstanding = 0,
   rateInr = 0,
+  canLogRepair = false,
+  stockPartNames = [],
 }: {
   deploymentId: string
   deploymentStatus: string
   currentVtd: string
   currentEc?: string | null
   availableVehicles: AvailableVehicle[]
+  /** Tech staff — enables the "Log minor repair" quick action. */
+  canLogRepair?: boolean
+  /** In-stock part names at the deployment's hub, for the minor-repair parts autocomplete. */
+  stockPartNames?: string[]
   /** CMD-only controls (e.g. edit deploy date). */
   isCmd?: boolean
   /** Current deploy_date (YYYY-MM-DD), for the edit-date dialog. */
@@ -130,6 +138,11 @@ export function EventDialogs({
         <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("extend")}>
           <CalendarPlus /> Extend
         </Button>
+        {canLogRepair && (deploymentStatus === "ACTIVE" || deploymentStatus === "LOCKED") ? (
+          <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("minorRepair")}>
+            <Wrench /> Log minor repair
+          </Button>
+        ) : null}
         <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("return")}>
           <LogOut /> Return vehicle
         </Button>
@@ -199,6 +212,12 @@ export function EventDialogs({
         dailyLateRate={dailyLateRate}
         rentOutstanding={rentOutstanding}
         open={open === "return"}
+        onClose={close}
+      />
+      <MinorRepairDialog
+        deploymentId={deploymentId}
+        stockPartNames={stockPartNames}
+        open={open === "minorRepair"}
         onClose={close}
       />
       <LockDialog
@@ -288,6 +307,61 @@ function useCloseOnSuccess(state: ActionState, onClose: () => void) {
   React.useEffect(() => {
     if (state.ok) onClose()
   }, [state.ok, onClose])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  MINOR REPAIR (on-the-spot, under active deployment)
+// ─────────────────────────────────────────────────────────────────────────
+
+function MinorRepairDialog({
+  deploymentId,
+  stockPartNames,
+  open,
+  onClose,
+}: {
+  deploymentId: string
+  stockPartNames: string[]
+  open: boolean
+  onClose: () => void
+}) {
+  const [state, formAction] = useFormState(
+    logMinorRepairAction.bind(null, deploymentId),
+    INITIAL
+  )
+  useCloseOnSuccess(state, onClose)
+
+  return (
+    <DialogShell
+      open={open}
+      onClose={onClose}
+      title="Log minor repair"
+      description="On-the-spot fix under the active deployment. Saved to the vehicle's repair history; does not change vehicle status."
+    >
+      <form action={formAction} className="space-y-4">
+        <FormError message={state.error} />
+        <Field label="Repair date" name="event_date" type="date" required defaultValue={today()} />
+        <TextareaField
+          label="What was repaired"
+          name="description"
+          required
+          hint="e.g. tightened brake cable, fixed loose mirror"
+        />
+        <div>
+          <div className="mb-1.5 text-xs font-medium text-muted-foreground">
+            Parts used (optional)
+          </div>
+          <BatchPartEntry
+            partNames={stockPartNames}
+            extra={{ name: "serial_no", label: "Serial no. (opt)" }}
+            optional
+          />
+        </div>
+        <div className="flex justify-end pt-2">
+          <SubmitButton label="Save repair" />
+        </div>
+      </form>
+    </DialogShell>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────

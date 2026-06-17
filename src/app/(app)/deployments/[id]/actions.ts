@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache"
 
 import { logActivityEvent } from "@/lib/db/activity-log"
 import { createClient } from "@/lib/supabase/server"
-import { getCurrentRole } from "@/lib/auth/role"
+import { getCurrentRole, getCurrentUserContext, TECH_ROLES } from "@/lib/auth/role"
+import { logMinorRepair } from "@/lib/db/repairs"
+import { listPartNames } from "@/lib/db/spare-parts"
 import {
   paymentSchema,
   depositSchema,
@@ -489,5 +491,85 @@ export async function editDeployDateAction(
   revalidatePath(`/deployments/${deploymentId}`)
   revalidatePath("/deployments")
   revalidatePath("/dashboard")
+  return { ok: true }
+}
+
+/**
+ * MINOR_REPAIR — on-the-spot fix under an ACTIVE/LOCKED deployment. Records a
+ * completed minor repair on the vehicle (optionally with parts → decrements
+ * stock) plus a timeline note. Does NOT change vehicle status. Tech staff only
+ * (it writes to the repair + inventory systems).
+ */
+export async function logMinorRepairAction(
+  deploymentId: string,
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const ctx = await getCurrentUserContext()
+  if (!ctx?.role || !TECH_ROLES.includes(ctx.role)) {
+    return { ok: false, error: "Only technicians can log a repair." }
+  }
+
+  const eventDate = String(formData.get("event_date") ?? "")
+  const description = String(formData.get("description") ?? "").trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) return { ok: false, error: "Pick a valid date" }
+  if (!description) return { ok: false, error: "Describe what was repaired" }
+
+  const names = formData.getAll("name").map((v) => String(v).trim())
+  const qtys = formData.getAll("qty").map((v) => String(v).trim())
+  const serials = formData.getAll("serial_no").map((v) => String(v).trim())
+  const rows = names
+    .map((name, i) => ({ name, qty: qtys[i] ?? "", serial: serials[i] ?? "" }))
+    .filter((r) => r.name.length > 0)
+
+  const supabase = createClient()
+  const { data: dep } = await supabase
+    .from("deployments")
+    .select("vehicle_id, hub_id, status")
+    .eq("id", deploymentId)
+    .maybeSingle()
+  const d = dep as { vehicle_id: string; hub_id: number; status: string } | null
+  if (!d) return { ok: false, error: "Deployment not found" }
+  if (d.status !== "ACTIVE" && d.status !== "LOCKED") {
+    return { ok: false, error: "Minor repairs can only be logged on active deployments" }
+  }
+
+  // Resolve part rows against the catalog (existing parts only).
+  const parts: { sparePartId: string; quantity: number; serialNo?: string }[] = []
+  if (rows.length > 0) {
+    const catalog = await listPartNames()
+    const byName = new Map(catalog.map((p) => [p.name.toLowerCase(), p.id]))
+    const unknown: string[] = []
+    for (const r of rows) {
+      const id = byName.get(r.name.toLowerCase())
+      if (!id) {
+        unknown.push(r.name)
+        continue
+      }
+      const qty = Number(r.qty)
+      if (!Number.isInteger(qty) || qty < 1) {
+        return { ok: false, error: `Quantity for "${r.name}" must be a whole number ≥ 1` }
+      }
+      parts.push({ sparePartId: id, quantity: qty, serialNo: r.serial || undefined })
+    }
+    if (unknown.length > 0) return { ok: false, error: `Not in catalog: ${unknown.join(", ")}` }
+  }
+
+  try {
+    await logMinorRepair({ deploymentId, hubId: d.hub_id, vehicleId: d.vehicle_id, description, parts })
+    const summary = rows.length ? ` · parts: ${rows.map((r) => `${r.qty}× ${r.name}`).join(", ")}` : ""
+    await logActivityEvent(deploymentId, {
+      type: "MINOR_REPAIR",
+      eventDate,
+      notes: `Minor repair: ${description}${summary}`,
+    })
+  } catch (e) {
+    return { ok: false, error: (e as Error).message }
+  }
+
+  revalidatePath(`/deployments/${deploymentId}`)
+  revalidatePath("/deployments")
+  revalidatePath("/repairs")
+  revalidatePath("/inventory")
   return { ok: true }
 }

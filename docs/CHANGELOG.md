@@ -765,6 +765,24 @@ on-hand driven by receipts + repair usage. **No DB migration.**
 
 ---
 
+## Session 46 — Minor (on-the-spot) repairs under active deployment (2026-06-17)
+
+For quick fixes done while the rider keeps the vehicle — no return/replace.
+
+- **Migration 0053:** `vehicle_repairs.is_minor` + `activity_event_type` `MINOR_REPAIR`.
+- **"Log minor repair"** Quick action on the deployment (ACTIVE/LOCKED), tech
+  staff only. Dialog captures date, description, and optional parts (multi-row
+  autocomplete from in-stock parts + qty + serial).
+- Creates a repair **born COMPLETED + is_minor** on the deployment's vehicle
+  (`logMinorRepair`), records parts (decrements stock), and logs a `MINOR_REPAIR`
+  timeline entry. **Vehicle stays In Use** — the 0048 trigger's COMPLETED branch
+  only frees a vehicle with no active deployment.
+- Shows in the vehicle's repair history + the part's stock-movement log; does
+  **not** enter the open-repair work queue.
+- `BatchPartEntry` generalised: `extra` (configurable 3rd field) + `optional`.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
