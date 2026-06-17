@@ -93,20 +93,13 @@ export default async function NewPartPage({ searchParams }: { searchParams: { er
               <input id="unit" name="unit" className={field} defaultValue="piece" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={label} htmlFor="opening_qty">Opening stock (this hub)</label>
-              <input id="opening_qty" name="opening_qty" type="number" min={0} defaultValue={0} className={field} />
-            </div>
-            <div>
-              <label className={label} htmlFor="reorder_level">Reorder at</label>
-              <input id="reorder_level" name="reorder_level" type="number" min={0} defaultValue={0} className={field} />
-            </div>
-          </div>
           <div>
             <label className={label} htmlFor="part_number">Part number (optional)</label>
             <input id="part_number" name="part_number" className={field} />
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Creates the part at 0 on hand. Add stock via &ldquo;Received from factory&rdquo;.
+          </p>
           <div className="flex items-center justify-end gap-3 border-t pt-5">
             <Button variant="ghost" render={<Link href="/inventory" />}>Cancel</Button>
             <Button type="submit" size="lg">Add part</Button>

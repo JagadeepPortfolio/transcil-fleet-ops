@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Plus, AlertTriangle } from "lucide-react"
+import { Plus, PackagePlus, Undo2 } from "lucide-react"
 
 import { getCurrentUserContext, TECH_ROLES, INVENTORY_MANAGER_ROLES } from "@/lib/auth/role"
 import { listStockForHub } from "@/lib/db/spare-parts"
@@ -27,34 +27,33 @@ export default async function InventoryPage() {
 
   const hubId = ctx.hubId ?? (await getDefaultHubId())
   const stock = hubId != null ? await listStockForHub(hubId) : []
-  const lowCount = stock.filter((s) => s.low).length
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Spare-parts inventory"
-        description="Per-hub stock. Low-stock rows are flagged."
+        description="Per-hub stock. On-hand is driven by factory receipts and repair usage."
         action={
           canManage ? (
-            <Button render={<Link href="/inventory/new" />}>
-              <Plus /> Add part
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button render={<Link href="/inventory/receive" />}>
+                <PackagePlus /> Received from factory
+              </Button>
+              <Button variant="outline" render={<Link href="/inventory/return-to-factory" />}>
+                <Undo2 /> Return to Factory
+              </Button>
+              <Button variant="ghost" render={<Link href="/inventory/new" />}>
+                <Plus /> New part
+              </Button>
+            </div>
           ) : undefined
         }
       />
 
-      <div className="flex gap-4 text-sm">
-        <Card className="flex-1 p-4">
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Parts tracked</div>
-          <div className="mt-1 text-lg font-semibold tabular-nums">{stock.length}</div>
-        </Card>
-        <Card className="flex-1 p-4">
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Low / out of stock</div>
-          <div className={`mt-1 text-lg font-semibold tabular-nums ${lowCount > 0 ? "text-destructive" : ""}`}>
-            {lowCount}
-          </div>
-        </Card>
-      </div>
+      <Card className="w-fit p-4">
+        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Parts tracked</div>
+        <div className="mt-1 text-lg font-semibold tabular-nums">{stock.length}</div>
+      </Card>
 
       <TableContainer>
         <Table>
@@ -63,8 +62,6 @@ export default async function InventoryPage() {
               <TableHead>Part</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="text-right">On hand</TableHead>
-              <TableHead className="text-right">Reorder at</TableHead>
-              <TableHead className="text-right">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -78,22 +75,12 @@ export default async function InventoryPage() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{s.category_name ?? "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{s.quantity_on_hand}</TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">{s.reorder_level}</TableCell>
-                <TableCell className="text-right">
-                  {s.low ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
-                      <AlertTriangle className="size-3" /> Low
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground">OK</span>
-                  )}
-                </TableCell>
               </TableRow>
             ))}
             {stock.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
-                  No parts yet. {canManage ? "Add your first part to get started." : ""}
+                <TableCell colSpan={3} className="py-10 text-center text-sm text-muted-foreground">
+                  No parts yet.
                 </TableCell>
               </TableRow>
             ) : null}

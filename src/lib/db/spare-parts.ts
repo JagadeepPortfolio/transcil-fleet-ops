@@ -34,6 +34,18 @@ export async function listCategories(): Promise<CategoryRow[]> {
   return (data ?? []) as unknown as CategoryRow[]
 }
 
+/** Catalog part names for autocomplete (the "Received / Return" entry screens). */
+export async function listPartNames(): Promise<{ id: string; name: string }[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("spare_parts")
+    .select("id, name")
+    .is("deleted_at", null)
+    .order("name", { ascending: true })
+  if (error) throw error
+  return (data ?? []) as unknown as { id: string; name: string }[]
+}
+
 export async function createCategory(name: string) {
   const supabase = createClient()
   const { error } = await supabase
@@ -144,6 +156,27 @@ export async function getPartWithStock(partId: string, hubId: number) {
       created_at: string
     }[],
   }
+}
+
+/** Factory-return history for a part at a hub (most recent first). */
+export async function listFactoryReturnsForPart(partId: string, hubId: number) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from("factory_returns")
+    .select("quantity, event_date, reason, created_by_name, created_at")
+    .eq("spare_part_id", partId)
+    .eq("hub_id", hubId)
+    .is("deleted_at", null)
+    .order("event_date", { ascending: false })
+    .limit(20)
+  if (error) throw error
+  return (data ?? []) as unknown as {
+    quantity: number
+    event_date: string
+    reason: string | null
+    created_by_name: string | null
+    created_at: string
+  }[]
 }
 
 async function getStockRow(hubId: number, partId: string) {

@@ -672,6 +672,28 @@ diagnose, consume per-hub spare parts, and complete repairs. Built in THIS app
 
 ---
 
+## Session 40 — Inventory: inward/outward logging (2026-06-17)
+
+Reworked inventory entry per client feedback: fresh logging only (no backfill),
+on-hand driven by receipts + repair usage. **No DB migration.**
+
+- **"Received from factory"** (renamed from Add Part) — multi-row batch screen:
+  per-row part-name autocomplete (native datalist over the catalog), quantity,
+  optional part number; **+ Add row** for many parts at once; one received-date.
+  Each row → a dated `RECEIVED` movement (+on-hand). **Existing parts only**
+  (validated server-side); unknown names are rejected with a list.
+- **"Return to Factory"** (new) — same multi-row UI → `factory_returns` records.
+  **Does not change on-hand** (defective cores were never good stock).
+- **"New part"** kept as a small separate action (create catalog part at 0 on
+  hand) since receive is existing-parts-only. Reorder + opening-qty fields removed.
+- **Inventory list** simplified to Part · Category · On hand (removed reorder
+  column + low-stock flag). **Part detail** is read-only now: on-hand + stock
+  movements + returned-to-factory history (stock-take/reorder form removed).
+- Both logging screens gated to TECH_SUPERVISOR / CMD.
+- Reusable client component `inventory/_components/batch-part-entry.tsx`.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
