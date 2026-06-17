@@ -53,7 +53,14 @@ export default async function PartDetailPage({ params }: { params: { id: string 
                   <span className="font-medium">
                     {m.movement_type === "RECEIVED" ? "Received" : m.movement_type === "USED" ? "Used in repair" : "Adjustment"}
                   </span>
-                  {m.reason ? <span className="text-muted-foreground"> · {m.reason}</span> : null}
+                  {m.reason && m.movement_type !== "USED" ? (
+                    <span className="text-muted-foreground"> · {m.reason}</span>
+                  ) : null}
+                  {m.ec_no ? (
+                    <span className="text-muted-foreground">
+                      {" "}· EC {m.ec_no}{m.vtd_no ? ` (VTD ${m.vtd_no})` : ""}
+                    </span>
+                  ) : null}
                   <div className="text-[11px] text-muted-foreground">
                     {formatDate(m.event_date)} · {m.created_by_name ?? "—"}
                   </div>

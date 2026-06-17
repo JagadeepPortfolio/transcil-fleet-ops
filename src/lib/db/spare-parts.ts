@@ -124,7 +124,7 @@ export async function getPartWithStock(partId: string, hubId: number) {
       .maybeSingle(),
     supabase
       .from("spare_part_movements")
-      .select("movement_type, quantity_delta, reason, event_date, created_by_name, created_at")
+      .select("movement_type, quantity_delta, reason, event_date, created_by_name, created_at, repair_id, vehicle_repairs(vehicles(vehicle_id, vtd_no))")
       .eq("spare_part_id", partId)
       .eq("hub_id", hubId)
       .is("deleted_at", null)
@@ -147,14 +147,26 @@ export async function getPartWithStock(partId: string, hubId: number) {
       category_name: partRaw.spare_part_categories?.name ?? null,
     } as PartDetail,
     stock,
-    movements: (movesRes.data ?? []) as unknown as {
+    movements: ((movesRes.data ?? []) as unknown as Array<{
       movement_type: MovementType
       quantity_delta: number
       reason: string | null
       event_date: string
       created_by_name: string | null
       created_at: string
-    }[],
+      repair_id: string | null
+      vehicle_repairs: { vehicles: { vehicle_id: string | null; vtd_no: string | null } | null } | null
+    }>).map((m) => ({
+      movement_type: m.movement_type,
+      quantity_delta: m.quantity_delta,
+      reason: m.reason,
+      event_date: m.event_date,
+      created_by_name: m.created_by_name,
+      created_at: m.created_at,
+      repair_id: m.repair_id,
+      ec_no: m.vehicle_repairs?.vehicles?.vehicle_id ?? null,
+      vtd_no: m.vehicle_repairs?.vehicles?.vtd_no ?? null,
+    })),
   }
 }
 
