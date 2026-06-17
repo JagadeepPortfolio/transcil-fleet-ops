@@ -7,6 +7,7 @@ import { listStockForHub } from "@/lib/db/spare-parts"
 import { getDefaultHubId } from "@/lib/db/hubs"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { InventoryBrowser } from "./_components/inventory-browser"
 
 export const metadata = { title: "Inventory · Transcil Fleet Ops" }
@@ -26,19 +27,27 @@ export default async function InventoryPage() {
         description="Per-hub stock. On-hand is driven by factory receipts and repair usage."
       />
 
-      <div className="flex flex-col gap-6 md:flex-row">
+      <div className={`flex flex-col gap-6 ${canManage ? "lg:flex-row" : ""}`}>
+        {/* Left sidebar — Quick actions (sticky, desktop only), matching deployments */}
         {canManage ? (
-          <div className="flex shrink-0 flex-col gap-2 md:w-56">
-            <Button className="w-full justify-start" render={<Link href="/inventory/receive" />}>
-              <PackagePlus /> Received from factory
-            </Button>
-            <Button variant="outline" className="w-full justify-start" render={<Link href="/inventory/return-to-factory" />}>
-              <Undo2 /> Return to Factory
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" render={<Link href="/inventory/new" />}>
-              <Plus /> New part
-            </Button>
-          </div>
+          <aside className="shrink-0 lg:w-56">
+            <div className="lg:sticky lg:top-6">
+              <Card className="space-y-3 p-4">
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Quick actions
+                </div>
+                <Button variant="ghost" className="w-full justify-start" render={<Link href="/inventory/receive" />}>
+                  <PackagePlus /> Received from factory
+                </Button>
+                <Button variant="ghost" className="w-full justify-start" render={<Link href="/inventory/return-to-factory" />}>
+                  <Undo2 /> Return to Factory
+                </Button>
+                <Button variant="ghost" className="w-full justify-start" render={<Link href="/inventory/new" />}>
+                  <Plus /> New part
+                </Button>
+              </Card>
+            </div>
+          </aside>
         ) : null}
 
         <div className="min-w-0 flex-1">
