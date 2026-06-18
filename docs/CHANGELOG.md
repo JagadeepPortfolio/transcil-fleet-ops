@@ -793,6 +793,14 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 48 — Inventory: sortable On hand column (2026-06-18)
+
+- The **On hand** header on the Inventory list is now a sort toggle (cycles
+  desc → asc → off, with an arrow indicator); works alongside the search box.
+  Client-side in `InventoryBrowser`; no migration.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
