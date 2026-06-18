@@ -8,7 +8,7 @@ import { BarChart3, Bike, CircleHelp, LayoutDashboard, Package, Truck, Users, Wr
 
 import { cn } from "@/lib/utils"
 
-type Role = "CMD" | "HUB_MANAGER" | "FIELD_STAFF" | "TECHNICIAN" | "TECH_SUPERVISOR"
+type Role = "CMD" | "HUB_MANAGER" | "FIELD_STAFF" | "TECHNICIAN" | "TECH_SUPERVISOR" | "TELECALLER"
 
 type NavItem = {
   label: string
@@ -16,14 +16,15 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string }>
   cmdOnly?: boolean
   roles?: Role[] // if set, only these roles see the item
+  hideForRoles?: Role[] // if set, these roles do NOT see the item
 }
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Riders", href: "/riders", icon: Users },
-  { label: "Vehicles", href: "/admin/vehicles", icon: Bike },
+  { label: "Vehicles", href: "/admin/vehicles", icon: Bike, hideForRoles: ["TELECALLER"] },
   { label: "Deployments", href: "/deployments", icon: Truck },
-  { label: "Repairs", href: "/repairs", icon: Wrench },
+  { label: "Repairs", href: "/repairs", icon: Wrench, hideForRoles: ["TELECALLER"] },
   { label: "Inventory", href: "/inventory", icon: Package, roles: ["CMD", "TECH_SUPERVISOR", "TECHNICIAN"] },
   { label: "Reports", href: "/reports", icon: BarChart3 },
 ]
@@ -31,7 +32,10 @@ const NAV: NavItem[] = [
 export function Sidebar({ role }: { role: Role }) {
   const pathname = usePathname() ?? ""
   const items = NAV.filter(
-    (n) => (!n.cmdOnly || role === "CMD") && (!n.roles || n.roles.includes(role))
+    (n) =>
+      (!n.cmdOnly || role === "CMD") &&
+      (!n.roles || n.roles.includes(role)) &&
+      (!n.hideForRoles || !n.hideForRoles.includes(role))
   )
 
   return (

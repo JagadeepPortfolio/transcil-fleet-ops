@@ -6,6 +6,7 @@ export type AppRole =
   | "FIELD_STAFF"
   | "TECHNICIAN"
   | "TECH_SUPERVISOR"
+  | "TELECALLER"
 
 /** Roles allowed to work repairs + view inventory. */
 export const TECH_ROLES: AppRole[] = ["CMD", "TECH_SUPERVISOR", "TECHNICIAN"]

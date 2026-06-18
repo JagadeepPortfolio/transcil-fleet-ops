@@ -109,6 +109,7 @@ export default async function DeploymentDetailPage({
                     colour: v.colour,
                   }))}
                   isCmd={isCmd}
+                  role={role ?? undefined}
                   canLogRepair={isTech}
                   stockPartNames={stockPartNames}
                   deployDate={d.deploy_date}

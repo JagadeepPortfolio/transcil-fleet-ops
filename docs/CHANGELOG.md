@@ -801,6 +801,23 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 49 — TELECALLER role (follow-up / collections) (2026-06-18)
+
+- **Migration 0054:** `TELECALLER` added to `app_role` (assign via
+  `promote_to_role(email, 'TELECALLER', hub_code)`). Hub-scoped.
+- **Deployment Quick actions limited to 3** for telecallers: Record payment,
+  Extend, Log reminder call. Replace / Return / Lock / Unlock hidden
+  (EventDialogs `role` prop). Edit-date (CMD) and minor-repair (tech) already
+  gated out.
+- **Nav:** telecallers see Dashboard / Riders / Deployments / Reports; Vehicles
+  + Repairs hidden (new `hideForRoles` on sidebar + mobile-nav); Inventory
+  already tech-only.
+- Enforcement is **UI-level** (per request) — the 3 allowed actions use the
+  existing hub-scoped activity_log RLS; no server-side hard block on the hidden
+  actions.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

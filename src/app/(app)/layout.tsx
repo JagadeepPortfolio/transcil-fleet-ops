@@ -46,6 +46,7 @@ export default async function AppLayout({
     | "FIELD_STAFF"
     | "TECHNICIAN"
     | "TECH_SUPERVISOR"
+    | "TELECALLER"
 
   return (
     <div className="flex min-h-dvh bg-muted/30">

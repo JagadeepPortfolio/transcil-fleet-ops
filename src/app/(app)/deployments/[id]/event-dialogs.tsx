@@ -85,9 +85,12 @@ export function EventDialogs({
   rateInr = 0,
   canLogRepair = false,
   stockPartNames = [],
+  role,
 }: {
   deploymentId: string
   deploymentStatus: string
+  /** Current user's role — TELECALLER is limited to payment / extend / call. */
+  role?: string
   currentVtd: string
   currentEc?: string | null
   availableVehicles: AvailableVehicle[]
@@ -112,6 +115,8 @@ export function EventDialogs({
 }) {
   const [open, setOpen] = React.useState<DialogKey>(null)
   const close = React.useCallback(() => setOpen(null), [])
+  // Telecallers may only Record payment / Extend / Log reminder call.
+  const restricted = role === "TELECALLER"
 
   return (
     <>
@@ -132,9 +137,11 @@ export function EventDialogs({
         <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("call")}>
           <PhoneCall /> Log reminder call
         </Button>
-        <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("replace")}>
-          <ArrowLeftRight /> Replace vehicle
-        </Button>
+        {!restricted ? (
+          <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("replace")}>
+            <ArrowLeftRight /> Replace vehicle
+          </Button>
+        ) : null}
         <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("extend")}>
           <CalendarPlus /> Extend
         </Button>
@@ -143,15 +150,17 @@ export function EventDialogs({
             <Wrench /> Log minor repair
           </Button>
         ) : null}
-        <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("return")}>
-          <LogOut /> Return vehicle
-        </Button>
-        {deploymentStatus === "ACTIVE" ? (
+        {!restricted ? (
+          <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("return")}>
+            <LogOut /> Return vehicle
+          </Button>
+        ) : null}
+        {!restricted && deploymentStatus === "ACTIVE" ? (
           <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("lock")}>
             <Lock /> Lock vehicle
           </Button>
         ) : null}
-        {deploymentStatus === "LOCKED" ? (
+        {!restricted && deploymentStatus === "LOCKED" ? (
           <Button variant="ghost" className="w-full justify-start" onClick={() => setOpen("unlock")}>
             <Unlock /> Unlock vehicle
           </Button>
