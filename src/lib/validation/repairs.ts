@@ -14,6 +14,7 @@ export const REPAIR_STATUSES = [
   "INVESTIGATING",
   "IN_REPAIR",
   "AWAITING_PARTS",
+  "IN_FACTORY",
   "COMPLETED",
   "CANCELLED",
 ] as const

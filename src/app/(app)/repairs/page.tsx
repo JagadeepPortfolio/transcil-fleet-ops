@@ -25,6 +25,7 @@ export function statusPill(status: RepairStatus): string {
     INVESTIGATING: "bg-info/10 text-info",
     IN_REPAIR: "bg-warning/15 text-warning-foreground",
     AWAITING_PARTS: "bg-destructive/10 text-destructive",
+    IN_FACTORY: "bg-info/10 text-info",
     COMPLETED: "bg-success/15 text-success-foreground",
     CANCELLED: "bg-muted text-muted-foreground line-through",
   }

@@ -846,6 +846,20 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 52 — Repair status "In Factory" (2026-06-18)
+
+- **Migrations 0057/0058:** new **`IN_FACTORY`** repair status (open, non-terminal).
+  When a technician sets a repair to In Factory, the **0048 sync trigger flips the
+  vehicle to `service_status='In Factory'`** (only when no active deployment), and
+  **`vehicles_enriched`** was recreated so the open repair's status rolls up
+  correctly (`IN_FACTORY` → effective_status **In Factory**, not Under Repair).
+- App: `IN_FACTORY` added to `REPAIR_STATUSES` (status dropdown picks it up) +
+  status-pill colour. `updateRepairStatus` is generic — no other change.
+- Transitions verified: REPORTED→IN_FACTORY→In Factory; IN_FACTORY→COMPLETED→
+  Available; IN_FACTORY→other open status→Under Repair.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
