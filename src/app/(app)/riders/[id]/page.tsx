@@ -1,9 +1,10 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { formatDate } from "@/lib/dates"
-import { ArrowLeft, Plus, StickyNote } from "lucide-react"
+import { ArrowLeft, Pencil, Plus, StickyNote } from "lucide-react"
 
 import { getRider } from "@/lib/db/riders"
+import { getCurrentRole } from "@/lib/auth/role"
 import { createClient } from "@/lib/supabase/server"
 
 import { Button } from "@/components/ui/button"
@@ -35,6 +36,8 @@ export default async function RiderDetailPage({
   const rider = await getRider(params.id)
   if (!rider) notFound()
 
+  const isCmd = (await getCurrentRole()) === "CMD"
+
   const supabase = createClient()
   const { data: deployments } = await supabase
     .from("deployments_enriched")
@@ -65,9 +68,16 @@ export default async function RiderDetailPage({
         title={rider.name}
         description={`${rider.phone} · ${rider.source ?? "—"}${rider.app_rider_id ? ` · Rider ID: ${rider.app_rider_id}` : ""}`}
         action={
-          <Button variant="ghost" render={<Link href="/riders" />}>
-            <ArrowLeft /> Back
-          </Button>
+          <div className="flex gap-2">
+            {isCmd ? (
+              <Button variant="outline" render={<Link href={`/riders/${rider.id}/edit`} />}>
+                <Pencil /> Edit
+              </Button>
+            ) : null}
+            <Button variant="ghost" render={<Link href="/riders" />}>
+              <ArrowLeft /> Back
+            </Button>
+          </div>
         }
       />
 

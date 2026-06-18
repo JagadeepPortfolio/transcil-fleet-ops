@@ -818,6 +818,18 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 50 — Edit rider profile (CMD-only) (2026-06-18)
+
+- **Edit button** on the rider detail page (CMD-only) → new **`/riders/[id]/edit`**
+  page: the full create form pre-filled, all fields editable, with **optional
+  photo / ID-proof re-upload** (kept if no new file chosen). Phone-uniqueness
+  re-checked (ignores the rider's own number).
+- **Migration 0055:** `riders` UPDATE RLS tightened to **CMD only** (was open to
+  all authenticated; riders were never edited before, so safe). UI + DB both gate.
+- `RiderPurposeFields` gained default props for pre-fill.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

@@ -243,6 +243,9 @@ These are load-bearing and easy to break; details in ARCHITECTURE.md:
   page no longer self-gates). **Edit/delete remain CMD-only** via per-page
   `getCurrentRole()` (`src/lib/auth/role.ts`) + RLS. The `(app)/admin` layout is
   no longer blanket CMD-only — new admin pages must self-gate.
+- **Rider edit (0055):** rider profiles are editable **CMD-only** via
+  `/riders/[id]/edit` (UI gate + `riders` UPDATE RLS restricted to CMD). Reuses
+  `riderCreateSchema`; photo/ID-proof re-upload is optional (kept if no new file).
 - **Deploy/region:** single Vercel region `bom1` (`vercel.json`) co-located with
   Supabase; deploy is manual `npx vercel --prod` (no Git auto-deploy).
 - **Repair subsystem (0044–0048):** vehicle repairs + per-hub spare-parts inventory.
