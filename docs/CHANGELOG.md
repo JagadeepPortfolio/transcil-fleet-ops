@@ -830,6 +830,22 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 51 — Change-audit trail (who changed what) (2026-06-18)
+
+- **Migration 0056:** generic **`audit_log`** + `audit_row_change()` SECURITY
+  DEFINER trigger on **riders / vehicles / deployments** — records every
+  INSERT/UPDATE/DELETE with the **acting user** and a **before→after diff** of
+  changed columns (noise cols updated_at/updated_by/created_at excluded).
+  Trigger-level → can't be bypassed. **CMD-only read** (RLS).
+- **`/admin/audit`** — CMD-only review screen (recent changes, filter by table),
+  + a **Change history** section on the rider detail page (CMD).
+  Reusable `components/audit-list.tsx`; helpers in `src/lib/db/audit.ts`.
+- Sidebar **Audit log** entry (CMD-only).
+- Note: deployment lifecycle events remain on the activity_log timeline; this
+  adds raw field-level change history on top (some overlap on deployments).
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

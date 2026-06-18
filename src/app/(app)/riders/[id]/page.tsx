@@ -4,8 +4,10 @@ import { formatDate } from "@/lib/dates"
 import { ArrowLeft, Pencil, Plus, StickyNote } from "lucide-react"
 
 import { getRider } from "@/lib/db/riders"
+import { listAuditForRow } from "@/lib/db/audit"
 import { getCurrentRole } from "@/lib/auth/role"
 import { createClient } from "@/lib/supabase/server"
+import { AuditList } from "@/components/audit-list"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
@@ -37,6 +39,7 @@ export default async function RiderDetailPage({
   if (!rider) notFound()
 
   const isCmd = (await getCurrentRole()) === "CMD"
+  const audit = isCmd ? await listAuditForRow("riders", params.id) : []
 
   const supabase = createClient()
   const { data: deployments } = await supabase
@@ -205,6 +208,13 @@ export default async function RiderDetailPage({
           </Table>
         </TableContainer>
       </div>
+
+      {isCmd ? (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold">Change history</h2>
+          <AuditList entries={audit} />
+        </div>
+      ) : null}
     </div>
   )
 }

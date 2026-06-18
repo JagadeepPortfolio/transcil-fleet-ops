@@ -243,6 +243,10 @@ These are load-bearing and easy to break; details in ARCHITECTURE.md:
   page no longer self-gates). **Edit/delete remain CMD-only** via per-page
   `getCurrentRole()` (`src/lib/auth/role.ts`) + RLS. The `(app)/admin` layout is
   no longer blanket CMD-only — new admin pages must self-gate.
+- **Change audit (0056):** `audit_log` + the `audit_row_change()` SECURITY DEFINER
+  trigger capture every INSERT/UPDATE/DELETE on **riders / vehicles / deployments**
+  (actor + before→after diff). CMD-only read; reviewed at `/admin/audit` and via a
+  Change-history section on the rider detail. Trigger-level — don't bypass it.
 - **Rider edit (0055):** rider profiles are editable **CMD-only** via
   `/riders/[id]/edit` (UI gate + `riders` UPDATE RLS restricted to CMD). Reuses
   `riderCreateSchema`; photo/ID-proof re-upload is optional (kept if no new file).
