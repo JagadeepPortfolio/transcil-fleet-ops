@@ -860,6 +860,17 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 53 — Fix: missing vehicle_repairs.reported_by column (2026-06-18)
+
+- **Bug:** `reported_by` was referenced by the 0050 trigger, `createRepair()`,
+  and `logMinorRepair()` but never created in 0046 — so manually setting a
+  vehicle to "Under Repair" (and, latently, return/replace-with-Vehicle-issue +
+  minor repairs) errored with *column "reported_by" does not exist*.
+- **Fix (migration 0059):** `ALTER TABLE vehicle_repairs ADD COLUMN reported_by
+  uuid`. DB-only; no app/redeploy needed.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |
