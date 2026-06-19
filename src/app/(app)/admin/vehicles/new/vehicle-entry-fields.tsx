@@ -2,7 +2,8 @@
 
 import * as React from "react"
 
-import { Field } from "@/components/ui/form-fields"
+import { Field, SelectField } from "@/components/ui/form-fields"
+import { businessTypes } from "@/lib/validation/vehicle"
 
 /**
  * New Vehicle entry fields with EC-No-driven autofill.
@@ -102,6 +103,11 @@ export function VehicleEntryFields() {
           onChange: (e) => setColour(e.target.value),
         }}
       />
+      <SelectField label="Business Type" name="business_type" defaultValue="B2C">
+        {businessTypes.map((b) => (
+          <option key={b} value={b}>{b}</option>
+        ))}
+      </SelectField>
     </>
   )
 }

@@ -9,6 +9,7 @@ export type VehicleRow = {
   hub_id: number | null
   colour: string | null
   service_status: string
+  business_type: string
   created_at: string
   updated_at: string
 }

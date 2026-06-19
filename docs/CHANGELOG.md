@@ -871,6 +871,19 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 54 — Vehicle Business Type (B2C / B2B) (2026-06-19)
+
+- **Migration 0060:** `vehicles.business_type` text NOT NULL DEFAULT `'B2C'`
+  CHECK (B2C/B2B) — the default **backfills all 152 existing vehicles to B2C**
+  (no bulk UPDATE). **`vehicles_enriched` dropped + recreated** so `v.*` picks up
+  the new column (v.* is frozen at view-creation; CREATE OR REPLACE can't reorder).
+- **Add-vehicle** form + **CMD edit-vehicle** form gain a **Business Type**
+  dropdown (default B2C); `vehicleCreateSchema` + `businessTypes` added.
+- **Repairs list** shows a **Business** column (joined from the vehicle).
+- Edits are audit-logged automatically (vehicles is in the 0056 audit set).
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

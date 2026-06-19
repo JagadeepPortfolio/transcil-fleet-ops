@@ -30,6 +30,7 @@ async function createVehicle(formData: FormData) {
     vehicle_id: formData.get("vehicle_id"),
     chassis_no: formData.get("chassis_no") ?? "",
     colour: formData.get("colour") ?? "",
+    business_type: formData.get("business_type") ?? "",
   })
   if (!parsed.success) {
     const msg = parsed.error.issues.map((i) => i.message).join("; ")
@@ -63,6 +64,7 @@ async function createVehicle(formData: FormData) {
       vehicle_type_id: vehicleType.id,
       hub_id: hub.id,
       colour: input.colour || null,
+      business_type: input.business_type,
       created_by: userId,
       updated_by: userId,
     })

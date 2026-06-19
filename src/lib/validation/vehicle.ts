@@ -1,11 +1,18 @@
 import { z } from "zod"
 import { up, upperOptional } from "./helpers"
 
+export const businessTypes = ["B2C", "B2B"] as const
+
 export const vehicleCreateSchema = z.object({
   vtd_no: z.string().trim().min(3, "VTD number is required").max(40).transform(up),
   vehicle_id: z.string().trim().min(1, "EC No is required").max(40).transform(up),
   chassis_no: upperOptional(60),
   colour: upperOptional(40),
+  business_type: z
+    .enum(businessTypes)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : "B2C")),
 })
 
 export type VehicleCreateInput = z.infer<typeof vehicleCreateSchema>

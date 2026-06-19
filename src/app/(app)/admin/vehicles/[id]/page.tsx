@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getVehicle } from "@/lib/db/vehicles"
 import { listVehicleTypes, listHubs } from "@/lib/db/hubs"
 import { getCurrentRole } from "@/lib/auth/role"
-import { vehicleUpdateSchema, serviceStatuses } from "@/lib/validation/vehicle"
+import { vehicleUpdateSchema, serviceStatuses, businessTypes } from "@/lib/validation/vehicle"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/ui/page-header"
@@ -29,6 +29,7 @@ async function updateVehicle(id: string, formData: FormData) {
     hub_id: formData.get("hub_id"),
     colour: formData.get("colour") ?? "",
     service_status: formData.get("service_status"),
+    business_type: formData.get("business_type") ?? "",
   })
   if (!parsed.success) {
     const msg = parsed.error.issues.map((i) => i.message).join("; ")
@@ -65,6 +66,7 @@ async function updateVehicle(id: string, formData: FormData) {
       hub_id: input.hub_id,
       colour: input.colour || null,
       service_status: effectiveStatus,
+      business_type: input.business_type,
       updated_by: userId,
     })
     .eq("id", id)
@@ -170,11 +172,23 @@ export default async function EditVehiclePage({
               ))}
             </SelectField>
           </div>
-          <Field
-            label="Colour"
-            name="colour"
-            defaultValue={vehicle.colour ?? ""}
-          />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field
+              label="Colour"
+              name="colour"
+              defaultValue={vehicle.colour ?? ""}
+            />
+            <SelectField
+              label="Business Type"
+              name="business_type"
+              required
+              defaultValue={vehicle.business_type ?? "B2C"}
+            >
+              {businessTypes.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </SelectField>
+          </div>
           {isInUse ? (
             <Field
               label="Status"
