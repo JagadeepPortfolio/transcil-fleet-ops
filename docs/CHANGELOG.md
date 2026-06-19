@@ -899,6 +899,19 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 56 — "Repair Fee" payment category (2026-06-19)
+
+- **Migration 0061:** `payment_category` CHECK gains **`'Repair Fee'`**; recreated
+  `deployment_totals` + `deployments_enriched`. Treated like **Late fee** —
+  isolated from rent: `total_paid`/`balance`/`pay_status` exclude it, but
+  `total_collected` includes it. New `repair_fee_collected` exposed.
+- App: `"Repair Fee"` added to `paymentCategories` (Record-payment "Payment for"
+  dropdown). Operations Overview "weekly rent" KPI excludes it (Daily Activity
+  "money collected" includes it — it's cash). `week_number` already optional.
+- Verified: a Repair-Fee payment leaves rent/balance untouched, adds to collected.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

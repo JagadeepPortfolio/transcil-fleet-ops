@@ -21,7 +21,7 @@ import { dbUuid, up, upperOptional } from "./helpers"
 
 export const PAYMENT_MODES = ["UPI", "Mobile App"] as const
 
-export const paymentCategories = ["Billing Cycle", "Late fee"] as const
+export const paymentCategories = ["Billing Cycle", "Late fee", "Repair Fee"] as const
 
 const dateSchema = z
   .string()

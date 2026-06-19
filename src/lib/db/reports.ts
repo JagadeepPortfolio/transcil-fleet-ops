@@ -183,7 +183,8 @@ export async function getOperationsOverview(
       (e) =>
         e.event_type === "PAYMENT" &&
         e.transaction_id &&
-        e.payment_category !== "Late fee"
+        e.payment_category !== "Late fee" &&
+        e.payment_category !== "Repair Fee"
     )
     .reduce((s, e) => s + (Number(e.amount_inr) || 0), 0)
   // Outstanding is a live figure: unpaid balance across active Individual units.
