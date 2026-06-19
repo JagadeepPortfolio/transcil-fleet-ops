@@ -884,6 +884,21 @@ For quick fixes done while the rider keeps the vehicle — no return/replace.
 
 ---
 
+## Session 55 — Business Type on Vehicles list + B2B not deployable (2026-06-19)
+
+- **Vehicles list** gains a **Business** column beside Colour.
+- **B2B vehicles are excluded from the deployable pool:** `listAvailableVehicles`
+  now filters `business_type='B2C'`, so B2B vehicles don't appear in the new-
+  deployment / replace-vehicle pickers (they still show "Available" on the
+  Vehicles list — they're idle, just not managed for deployment here). This also
+  trims the dashboard "available" count to deployable B2C.
+- **Server guard:** `createDeployment` rejects a B2B vehicle even if the picker
+  is bypassed.
+- **Available vs deployable:** effective_status still includes B2B as Available
+  (real state); "deployable" = Available AND B2C. No DB migration.
+
+---
+
 ## What's next
 
 | Priority | Work | Blocked on |

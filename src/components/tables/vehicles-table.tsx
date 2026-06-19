@@ -14,6 +14,7 @@ export type VehicleRow = {
   vehicle_id: string | null
   chassis_no: string | null
   colour: string | null
+  business_type: string
   service_status: string
   /** Derived rollup from vehicles_enriched: In Use / Locked / Under Repair / In Factory / Available. */
   effective_status: string
@@ -87,6 +88,13 @@ function makeColumns(canManage: boolean): ColumnDef<VehicleRow>[] {
       <span className="text-muted-foreground">
         {row.original.colour ?? "—"}
       </span>
+    ),
+  },
+  {
+    accessorKey: "business_type",
+    header: "Business",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.original.business_type ?? "—"}</span>
     ),
   },
   {

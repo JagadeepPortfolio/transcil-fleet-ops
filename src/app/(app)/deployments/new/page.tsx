@@ -65,6 +65,19 @@ async function createDeployment(formData: FormData) {
 
   const input = parsed.data
 
+  // B2B vehicles aren't deployed from this app yet — reject even if the picker
+  // was bypassed (the dropdown already excludes them).
+  const { data: veh } = await supabase
+    .from("vehicles")
+    .select("business_type")
+    .eq("id", input.vehicle_id)
+    .maybeSingle()
+  if ((veh as { business_type?: string } | null)?.business_type === "B2B") {
+    redirect(
+      `/deployments/new?error=${encodeURIComponent("That vehicle is B2B and can't be deployed from this app yet.")}`
+    )
+  }
+
   // Initial payment — always recorded, EXCEPT for 3PL (no rent).
   let payParsed: ReturnType<typeof paymentSchema.safeParse> | null = null
   if (!is3PL) {

@@ -40,8 +40,11 @@ export async function getVehicle(id: string) {
 /**
  * Vehicles available to deploy right now. Uses the derived effective_status from
  * `vehicles_enriched` (migration 0051): only 'Available' is deployable, which
- * correctly excludes In Use, **Locked**, Under Repair, and In Factory — a single
- * source of truth that can't drift.
+ * correctly excludes In Use, **Locked**, Under Repair, and In Factory.
+ *
+ * Also **B2C-only**: B2B vehicles are not managed for deployment in this app yet,
+ * so they're excluded from the deployable pool even when idle/Available (future
+ * scope). `createDeployment` re-checks this server-side.
  */
 export async function listAvailableVehicles() {
   const supabase = createClient()
@@ -49,6 +52,7 @@ export async function listAvailableVehicles() {
     .from("vehicles_enriched")
     .select("id, vtd_no, vehicle_id, colour, vehicle_type_name")
     .eq("effective_status", "Available")
+    .eq("business_type", "B2C")
     .order("vtd_no", { ascending: true })
   if (error) throw error
   return data ?? []
